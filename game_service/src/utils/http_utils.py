@@ -1,9 +1,12 @@
 import requests
 
 
-def get(url):
-    response = requests.get(url)
-    return response.json()
+def join(base_url, endpoint):
+    return f"{base_url}/{endpoint}"
+
+
+def get(url, resource_id):
+    return requests.get(join(url, resource_id))
 
 
 def post(url, payload):
