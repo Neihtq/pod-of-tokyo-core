@@ -9,8 +9,8 @@ def get(url, resource_id):
     return requests.get(join(url, resource_id))
 
 
-def post(url, payload):
-    return requests.post(url, json=payload)
+def post(base_url, endpoint, payload={}):
+    return requests.post(join(base_url, endpoint), json=payload)
 
 
 def put(url, payload):
