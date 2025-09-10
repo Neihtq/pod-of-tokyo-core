@@ -68,27 +68,14 @@ class GameService:
         pod = self.players[player_id]
         _, score, _, location = pod.get_state()
 
-        node_states = self.controller.get_node_states()
-        if node_states["tokyoCity"] is None:
-            self.controller.relocate(player_id, Location.CITY)
-            self.notify_all(
-                Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo City!"}
-            )
-        elif self.num_players_alive > 4 and node_states["tokyoBay"] is None:
-            self.controller.relocate(player_id, Location.BAY)
-            self.notify_all(
-                Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo Bay!"}
-            )
-
-        if (
-            self.locations[location] == Location.CITY
-            or self.locations[location] == Location.BAY
-        ):
-            pod.update_score(1)
-            score += 1
+        if not self.is_in_tokyo(location):
+            score = self.fill_empty_node(pod, score)
+        elif self.is_in_tokyo(location):
+            pod.update_score(2)
+            score += 2
             self.notify_all(
                 Commands.MESSAGE,
-                {"message": f"{pod.name} received 1 star!"},
+                {"message": f"{pod.name} received 2 stars!"},
             )
 
         if self.check_winner(pod, score):
@@ -97,7 +84,43 @@ class GameService:
         dices = self.reroll_dices(pod)
         self.resolve_dices(pod, dices, location)
 
+        if self.locations[location] == Location.OUTSIDE:
+            score = self.fill_empty_node(pod, score)
+
         self.check_winner(pod, score)
+
+    def is_in_tokyo(self, location):
+        return (
+            self.locations[location] == Location.CITY
+            or self.locations[location] == Location.BAY
+        )
+
+    def fill_empty_node(self, pod, score):
+        node_states = self.controller.get_node_states()
+        if node_states["tokyoCity"] is None:
+            self.controller.relocate(pod.player_id, Location.CITY)
+            self.notify_all(
+                Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo City!"}
+            )
+            pod.update_score(1)
+            score += 1
+            self.notify_all(
+                Commands.MESSAGE,
+                {"message": f"{pod.name} received 1 star!"},
+            )
+        elif self.num_players_alive > 4 and node_states["tokyoBay"] is None:
+            self.controller.relocate(pod.player_id, Location.BAY)
+            self.notify_all(
+                Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo Bay!"}
+            )
+            pod.update_score(1)
+            score += 1
+            self.notify_all(
+                Commands.MESSAGE,
+                {"message": f"{pod.name} received 1 star!"},
+            )
+
+        return score
 
     def check_winner(self, pod, score):
         is_winner = score == WINNING_CONDITION or (
@@ -204,11 +227,7 @@ class GameService:
                             Commands.MESSAGE,
                             {"message": f"{pod_at_bay.name} left Tokyo!"},
                         )
-
-            elif location == Location.OUTSIDE and p_location in {
-                Location.CITY,
-                Location.BAY,
-            }:
+            elif self.is_in_tokyo(p_location):
                 response = self.call_and_wait(Commands.YIELD, p_id)
                 if response["yield"]:
                     self.controller.relocate(p_id, Location.OUTSIDE)
