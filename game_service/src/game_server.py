@@ -21,7 +21,7 @@ class GameServer:
         self.app.config["SECRET_KEY"] = "secret"
 
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
-        self.game_service = GameService(f"{host}:{controller_port}")
+        self.game_service = GameService(self.socketio, f"{host}:{controller_port}")
 
         self._register_events()
 
@@ -37,18 +37,10 @@ class GameServer:
             sid = socket_request.sid
             self.game_service.remove(sid)
 
-        self.socketio.on("message")
-
-        def on_message(data):
-            sid = socket_request.sid
-            msg = data.get("msg", "")
-            print(f"[{sid}]) says: {msg}")
-
-            emit("message", {"msg": f"You said: {msg}"}, to=sid)
-
-            for other_sid in self.game_service.all():
-                if other_sid != sid:
-                    emit("message", {"msg": f"[{sid}] says: {msg}"}, to=other_sid)
+        @self.socketio.on("start game")
+        def handle_start_game(json):
+            print("Starting game")
+            self.socketio.start_background_task(self.game_service.game_loop)
 
     def run(self):
         self.socketio.run(self.app, host=self.host, port=self.port)
