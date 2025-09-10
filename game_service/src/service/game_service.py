@@ -84,7 +84,7 @@ class GameService:
             self.locations[location] == Location.CITY
             or self.locations[location] == Location.BAY
         ):
-            pod.updateScore(1)
+            pod.update_score(1)
             score += 1
             self.notify_all(
                 Commands.MESSAGE,
@@ -95,7 +95,7 @@ class GameService:
             return
 
         dices = self.reroll_dices(pod)
-        self.resolve_dices(player_id, dices, location)
+        self.resolve_dices(pod, dices, location)
 
         self.check_winner(pod, score)
 
@@ -189,25 +189,27 @@ class GameService:
             health -= damage
             if health <= 0:
                 self.dead.add(p_id)
+                self.num_players_alive -= 1
                 self.controller.destroy_pod(p_id)
                 self.notify_all(Commands.MESSAGE, {"message": f"{pod.name} died!"})
 
                 if self.num_players_alive <= 3:
                     player_at_bay = self.controller.destroy_tokyo_bay()["playerId"]
-                    pod_at_bay = self.players[player_at_bay]
                     self.notify_all(
                         Commands.MESSAGE, {"message": f"Tokyo Bay has been flooded!"}
                     )
-                    self.notify_all(
-                        Commands.MESSAGE,
-                        {"message": f"{pod_at_bay.name} left Tokyo!"},
-                    )
+                    if player_at_bay:
+                        pod_at_bay = self.players[player_at_bay]
+                        self.notify_all(
+                            Commands.MESSAGE,
+                            {"message": f"{pod_at_bay.name} left Tokyo!"},
+                        )
 
             elif location == Location.OUTSIDE and p_location in {
                 Location.CITY,
                 Location.BAY,
             }:
-                response = self.call_and_wait(self, Commands.YIELD, p_id)
+                response = self.call_and_wait(Commands.YIELD, p_id)
                 if response["yield"]:
                     self.controller.relocate(p_id, Location.OUTSIDE)
                     self.notify_all(
