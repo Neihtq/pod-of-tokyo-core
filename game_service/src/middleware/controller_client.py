@@ -24,3 +24,14 @@ class ControllerClient:
 
     def destroy_pod(self, player_id):
         return http.post(self.base_url, "destroyPod", {"player_id": player_id})
+
+    def get_node_states(self):
+        """
+        Response:
+        {
+            "tokyoCity": player_id | null,
+            "tokyoBay": player_id | null,
+            "outside": [player_id]
+        }
+        """
+        return http.post(self.base_url, "getNodeStates")

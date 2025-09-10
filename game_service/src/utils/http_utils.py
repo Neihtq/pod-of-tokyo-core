@@ -10,7 +10,7 @@ def get(url, resource_id):
 
 
 def post(base_url, endpoint, payload={}):
-    return requests.post(join(base_url, endpoint), json=payload)
+    return requests.post(join(base_url, endpoint), json=payload).json()
 
 
 def put(url, payload):

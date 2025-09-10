@@ -2,7 +2,6 @@ from typing import Protocol, cast
 
 from flask import Flask, request
 from flask_socketio import SocketIO, emit
-
 from service.game_service import GameService
 
 
@@ -14,7 +13,7 @@ socket_request = cast(SocketRequest, request)
 
 
 class GameServer:
-    def __init__(self, host="0.0.0.0", port=5000):
+    def __init__(self, host="0.0.0.0", port=5000, controller_port=6000):
         self.host = host
         self.port = port
 
@@ -22,7 +21,7 @@ class GameServer:
         self.app.config["SECRET_KEY"] = "secret"
 
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
-        self.game_service = GameService()
+        self.game_service = GameService(f"{host}:{controller_port}")
 
         self._register_events()
 
