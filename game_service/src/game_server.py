@@ -13,7 +13,7 @@ socket_request = cast(SocketRequest, request)
 
 
 class GameServer:
-    def __init__(self, host="0.0.0.0", port=5000, controller_port=6000):
+    def __init__(self, host="0.0.0.0", port=7000, controller_port=8000):
         self.host = host
         self.port = port
 
