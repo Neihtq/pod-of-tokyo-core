@@ -74,7 +74,7 @@ class GameService:
             self.notify_all(
                 Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo City!"}
             )
-        elif self.num_players_alive > 3 and node_states["tokyoBay"] is None:
+        elif self.num_players_alive > 4 and node_states["tokyoBay"] is None:
             self.controller.relocate(player_id, Location.BAY)
             self.notify_all(
                 Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo Bay!"}
@@ -193,7 +193,7 @@ class GameService:
                 self.controller.destroy_pod(p_id)
                 self.notify_all(Commands.MESSAGE, {"message": f"{pod.name} died!"})
 
-                if self.num_players_alive <= 3:
+                if self.num_players_alive <= 4:
                     player_at_bay = self.controller.destroy_tokyo_bay()["playerId"]
                     self.notify_all(
                         Commands.MESSAGE, {"message": f"Tokyo Bay has been flooded!"}
