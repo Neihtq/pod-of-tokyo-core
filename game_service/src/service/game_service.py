@@ -64,6 +64,9 @@ class GameService:
             self.start_turn(player_id)
             idx = (idx + 1) % len(self.player_order)
 
+        self.controller.destroy_all()
+        self.__init__(self.socketio, self.controller.base_url)
+
     def start_turn(self, player_id):
         pod = self.players[player_id]
         _, score, _, location = pod.get_state()
