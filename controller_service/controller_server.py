@@ -1,5 +1,4 @@
 import random
-from threading import Thread
 
 from flask import Flask, jsonify, request
 from kube.kube_dao import KubeDao
