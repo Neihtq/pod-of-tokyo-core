@@ -69,7 +69,6 @@ class KubeDao:
     def list_all_pods(self):
         pods = self.client.list_pod_for_all_namespaces().items
 
-        print("PODS BY NAMES")
         pods_by_nodes = defaultdict(list)
         for pod in pods:
             node_name = pod.spec.node_name

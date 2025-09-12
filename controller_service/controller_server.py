@@ -1,5 +1,5 @@
 import random
-from tarfile import OutsideDestinationError
+from threading import Thread
 
 from flask import Flask, jsonify, request
 from kube.kube_dao import KubeDao
@@ -78,7 +78,7 @@ class ControllerServer:
 
         @self.app.route("/destroyTokyoBay", methods=["POST"])
         def destroy_tokyo_bay():
-            tokyo_bay_node_name = self.node_name_by_location["Tokyo_Bay"]
+            tokyo_bay_node_name = self.node_name_by_location[TOKYO_BAY_KEY]
 
             pods_by_nodes = self.kube_dao.list_all_pods()
             pod_in_bay = pods_by_nodes[tokyo_bay_node_name][0]
@@ -129,16 +129,14 @@ class ControllerServer:
         def get_node_states():
             pods_by_nodes = self.kube_dao.list_all_pods()
             response = {}
-            for node_name, pods in pods_by_nodes.items():
-                if self.location_by_node_name[node_name] == "Tokyo City":
-                    response[TOKYO_CITY_KEY] = self.player_ids_by_name[pods][0]
-                elif self.location_by_node_name[node_name] == "Tokyo Bay":
-                    response[TOKYO_BAY_KEY] = self.player_ids_by_name[pods][0]
-                else:
-                    response[OUTSIDE_KEY] = [
-                        self.player_ids_by_name[pod] for pod in pods
-                    ]
 
+            for node_name, pods in pods_by_nodes.items():
+                if self.location_by_node_name[node_name] == TOKYO_CITY_KEY:
+                    response[TOKYO_CITY_KEY] = pods[0]
+                elif self.location_by_node_name[node_name] == TOKYO_BAY_KEY:
+                    response[TOKYO_BAY_KEY] = pods[0]
+                else:
+                    response[OUTSIDE_KEY] = pods
             return jsonify(response)
 
     def setup_nodes(self):
