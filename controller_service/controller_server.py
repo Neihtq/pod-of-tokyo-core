@@ -108,8 +108,12 @@ class ControllerServer:
             player_id = data.get("playerId")
             target_location = data.get("targetLocation")
 
+            target_node = self.node_name_by_location[target_location]
             pod_name = self.players_by_id[player_id][0]
-            self.kube_dao.move_pod(pod_name, target_location)
+            print(
+                f"Receive request to relocate '{pod_name}' ({player_id}) to '{target_location}' ({target_node})"
+            )
+            self.kube_dao.move_pod(pod_name, target_node)
             return jsonify({"status": "success"})
 
         @self.app.route("/destroyPod", methods=["POST"])

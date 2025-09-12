@@ -107,7 +107,7 @@ class GameService:
     def fill_empty_node(self, pod, score):
         node_states = self.controller.get_node_states()
         if node_states[TOKYO_CITY_KEY] is None:
-            self.controller.relocate(pod.player_id, Location.CITY)
+            self.controller.relocate(pod.player_id, Location.CITY.value)
             self.notify_all(
                 Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo City!"}
             )
@@ -118,7 +118,7 @@ class GameService:
                 {"message": f"{pod.name} received 1 star!"},
             )
         elif self.num_players_alive > 4 and node_states[TOKYO_BAY_KEY] is None:
-            self.controller.relocate(pod.player_id, Location.BAY)
+            self.controller.relocate(pod.player_id, Location.BAY.value)
             self.notify_all(
                 Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo Bay!"}
             )
@@ -239,7 +239,7 @@ class GameService:
             elif self.is_in_tokyo(p_location):
                 response = self.call_and_wait(Commands.YIELD, p_id)
                 if response["yield"]:
-                    self.controller.relocate(p_id, Location.OUTSIDE)
+                    self.controller.relocate(p_id, Location.OUTSIDE.value)
                     self.notify_all(
                         Commands.MESSAGE,
                         {"message": f"{pod.name} left Tokyo!"},

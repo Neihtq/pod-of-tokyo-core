@@ -125,6 +125,7 @@ class KubeDao:
         return service.spec.ports[0].node_port
 
     def delete_pod(self, pod_name):
+        print(f"Deleting pod '{pod_name}'")
         self.client.delete_namespaced_pod(name=pod_name, namespace=NAMESPACE)
 
     def get_pod(self, pod_name):
@@ -132,9 +133,9 @@ class KubeDao:
         return pod
 
     def move_pod(self, pod_name, target_node):
-        print(f"Moving pod '{pod_name}' to node '{target_node}'")
         pod = self.get_pod(pod_name)
         self.delete_pod(pod_name)
+        self.wait_for_pod_deletion(pod_name)
 
         containers = []
         for c in pod.spec.containers:
@@ -167,12 +168,15 @@ class KubeDao:
             ),
         )
 
+        print(f"Recreating pod '{pod_name}'")
         self.client.create_namespaced_pod(namespace=NAMESPACE, body=pod_manifest)
+        self.wait_for_pod_ready(pod_name)
 
     def get_ip(self):
         return subprocess.check_output(["minikube", "ip"], text=True).strip()
 
     def wait_for_pod_deletion(self, pod_name, namespace=NAMESPACE, timeout=60):
+        print(f"Waiting for pod deletion of '{pod_name}'")
         for _ in range(timeout):
             try:
                 self.client.read_namespaced_pod(pod_name, namespace)
@@ -184,14 +188,18 @@ class KubeDao:
             time.sleep(1)
         raise TimeoutError(f"Pod {pod_name} deletion timed out after {timeout} seconds")
 
-    def wait_for_ready(self, pod_name, namespace=NAMESPACE, timeout=120):
+    def wait_for_pod_ready(self, pod_name, namespace=NAMESPACE, timeout=120):
+        print(f"Waiting for pod startup of '{pod_name}'")
         for _ in range(timeout):
             pod = self.client.read_namespaced_pod(pod_name, namespace)
-            if pod.status.phase != "Running":
-                continue
-            conditions = pod.status.conditions or []
-            ready = any(c.type == "Ready" and c.status == " True" for c in conditions)
-            if ready:
-                return
+            if pod.status.phase == "Running":
+                conditions = pod.status.conditions or []
+                ready = any(
+                    c.type == "Ready" and c.status == "True" for c in conditions
+                )
+                if ready:
+                    return
+
             time.sleep(2)
+
         raise TimeoutError(f"Pod {pod_name} start up timed out after {timeout} seconds")
