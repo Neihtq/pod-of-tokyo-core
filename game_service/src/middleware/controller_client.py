@@ -17,9 +17,11 @@ class ControllerClient:
     def destroy_all(self):
         return http.post(self.base_url, "destroyAll")
 
-    def relocate(self, player_id, location):
+    def relocate(self, player_id, target_location):
         return http.post(
-            self.base_url, "relocate", {"playerId": player_id, "location": location}
+            self.base_url,
+            "relocate",
+            {"playerId": player_id, "targetLocation": target_location},
         )
 
     def destroy_pod(self, player_id):

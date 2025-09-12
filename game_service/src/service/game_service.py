@@ -10,6 +10,10 @@ WINNING_CONDITION = 20
 
 ROOM = "king-of-tokyo"
 
+TOKYO_CITY_KEY = "tokyo-city"
+TOKYO_BAY_KEY = "tokyo-bay"
+OUTSIDE_KEY = "outside"
+
 
 class GameService:
     def __init__(self, socketio, controller_url):
@@ -44,9 +48,9 @@ class GameService:
 
         self.num_players_alive = len(self.player_order)
         self.locations = {
-            game_data["locations"]["tokyoBay"]: Location.BAY,
-            game_data["locations"]["tokyoCity"]: Location.CITY,
-            game_data["locations"]["outside"]: Location.OUTSIDE,
+            game_data["locations"][TOKYO_CITY_KEY]: Location.CITY,
+            game_data["locations"][TOKYO_BAY_KEY]: Location.BAY,
+            game_data["locations"][OUTSIDE_KEY]: Location.OUTSIDE,
         }
 
     def game_loop(self):
@@ -102,7 +106,7 @@ class GameService:
 
     def fill_empty_node(self, pod, score):
         node_states = self.controller.get_node_states()
-        if node_states["tokyoCity"] is None:
+        if node_states[TOKYO_CITY_KEY] is None:
             self.controller.relocate(pod.player_id, Location.CITY)
             self.notify_all(
                 Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo City!"}
@@ -113,7 +117,7 @@ class GameService:
                 Commands.MESSAGE,
                 {"message": f"{pod.name} received 1 star!"},
             )
-        elif self.num_players_alive > 4 and node_states["tokyoBay"] is None:
+        elif self.num_players_alive > 4 and node_states[TOKYO_BAY_KEY] is None:
             self.controller.relocate(pod.player_id, Location.BAY)
             self.notify_all(
                 Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo Bay!"}

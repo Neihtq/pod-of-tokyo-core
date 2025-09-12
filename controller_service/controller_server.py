@@ -1,18 +1,29 @@
 import random
+from tarfile import OutsideDestinationError
 
 from flask import Flask, jsonify, request
 from kube.kube_dao import KubeDao
 
 MONSTER_NAMES = [
-    "Alienoid",
-    "Boogie Woogie",
-    "Giga Zaur",
-    "The King",
-    "Kraken",
-    "Meka Dragon",
-    "Pandakai",
-    "Pumpkin Jack",
-    "Space Penguin",
+    "alienoid",
+    "boogie-woogie",
+    "giga-zaur",
+    "the-king",
+    "kraken",
+    "meka-dragon",
+    "pandakai",
+    "pumpkin-jack",
+    "space-penguin",
+]
+
+TOKYO_CITY_KEY = "tokyo-city"
+TOKYO_BAY_KEY = "tokyo-bay"
+OUTSIDE_KEY = "outside"
+
+LOCATION_NAMES = [
+    TOKYO_CITY_KEY,
+    TOKYO_BAY_KEY,
+    OUTSIDE_KEY,
 ]
 
 
@@ -22,15 +33,15 @@ def join_url(ip, port):
 
 class ControllerServer:
     def __init__(self, host="0.0.0.0", port=8000):
-        self.app = Flask(__name__)
-        self.beginning_port = 8001
-        self.kube_dao = KubeDao()
-
         self.players_by_id = {}
         self.player_ids_by_name = {}
         self.ip = None
         self.location_by_node_name = {}
         self.node_name_by_location = {}
+
+        self.app = Flask(__name__)
+        self.kube_dao = KubeDao()
+        self.setup_nodes()
 
         @self.app.route("/")
         def ping():
@@ -38,16 +49,6 @@ class ControllerServer:
 
         @self.app.route("/initGame", methods=["POST"])
         def init_game():
-            print("Received request for /initGame")
-            self.kube_dao.spawn_nodes(["Tokyo City", "Tokyo Bay", "Outside"])
-            self.ip = self.kube_dao.get_ip()
-            print(f"Minikube started successfully. IP address: {self.ip}")
-
-            nodes = self.kube_dao.list_all_nodes()
-            for node in nodes:
-                self.location_by_node_name[node["name"]] = node["location"]
-                self.location_by_node_name[node["location"]] = node["name"]
-
             data = request.get_json()
             player_ids = data.get("playerIds")
             monster_names = random.sample(MONSTER_NAMES, len(player_ids))
@@ -55,28 +56,34 @@ class ControllerServer:
             players = []
             for i in range(len(player_ids)):
                 player_id = player_ids[i]
-                name = monster_names[i]
+                pod_name = monster_names[i]
                 port = self.kube_dao.create_pod(
-                    pod_name=name, node_name="Outside", node_port=self.beginning_port
+                    pod_name=pod_name,
+                    node_name=self.node_name_by_location[OUTSIDE_KEY],
                 )
                 pod_url = join_url(self.ip, port)
-                players.append({"playerId": player_id, "name": name, "podUrl": pod_url})
-                self.players_by_id[player_id] = (name, pod_url)
-                self.player_ids_by_name[name] = player_id
+                players.append(
+                    {
+                        "playerId": player_id,
+                        "name": pod_name,
+                        "podUrl": pod_url,
+                    }
+                )
+                self.players_by_id[player_id] = (pod_name, pod_url)
+                self.player_ids_by_name[pod_name] = player_id
 
-                self.beginning_port += 1
-                print(f"Successfully created pod '{name}' listening on {pod_url}")
+                print(f"Successfully created pod '{pod_name}' listening on {pod_url}")
 
-            return jsonify({"players": players})
+            return jsonify({"players": players, "locations": {}})
 
         @self.app.route("/destroyTokyoBay", methods=["POST"])
         def destroy_tokyo_bay():
-            tokyo_bay_node_name = self.node_name_by_location["Tokyo Bay"]
+            tokyo_bay_node_name = self.node_name_by_location["Tokyo_Bay"]
 
             pods_by_nodes = self.kube_dao.list_all_pods()
             pod_in_bay = pods_by_nodes[tokyo_bay_node_name][0]
 
-            outside_node_name = self.node_name_by_location["Outside"]
+            outside_node_name = self.node_name_by_location[OUTSIDE_KEY]
             self.kube_dao.move_pod(pod_name=pod_in_bay, target_node=outside_node_name)
 
             self.kube_dao.delete_node(tokyo_bay_node_name)
@@ -99,10 +106,10 @@ class ControllerServer:
         def relocate():
             data = request.get_json()
             player_id = data.get("playerId")
-            location = data.get("location")
+            target_location = data.get("targetLocation")
 
             pod_name = self.players_by_id[player_id][0]
-            self.kube_dao.move_pod(pod_name, location)
+            self.kube_dao.move_pod(pod_name, target_location)
             return jsonify({"status": "success"})
 
         @self.app.route("/destroyPod", methods=["POST"])
@@ -120,13 +127,25 @@ class ControllerServer:
             response = {}
             for node_name, pods in pods_by_nodes.items():
                 if self.location_by_node_name[node_name] == "Tokyo City":
-                    response["tokyoCity"] = self.player_ids_by_name[pods][0]
+                    response[TOKYO_CITY_KEY] = self.player_ids_by_name[pods][0]
                 elif self.location_by_node_name[node_name] == "Tokyo Bay":
-                    response["tokyoBay"] = self.player_ids_by_name[pods][0]
+                    response[TOKYO_BAY_KEY] = self.player_ids_by_name[pods][0]
                 else:
-                    response["outside"] = self.player_ids_by_name[pods]
+                    response[OUTSIDE_KEY] = self.player_ids_by_name[pods]
 
             return jsonify(response)
+
+    def setup_nodes(self):
+        print(f"Initialize minikube with nodes: {LOCATION_NAMES}")
+        self.kube_dao.spawn_nodes(LOCATION_NAMES)
+        self.ip = self.kube_dao.get_ip()
+        print(f"Minikube started successfully. IP address: {self.ip}")
+
+        nodes = self.kube_dao.list_all_nodes()
+        for node in nodes:
+            self.location_by_node_name[node["name"]] = node["location"]
+            self.node_name_by_location[node["location"]] = node["name"]
+        print(f"Node initialization succeeded")
 
     def run(self, host="0.0.0.0", port=8000, debug=True):
         self.app.run(host=host, port=port, debug=debug)

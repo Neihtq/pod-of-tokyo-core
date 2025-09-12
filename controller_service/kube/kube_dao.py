@@ -8,10 +8,6 @@ NAMESPACE = "default"
 
 
 class KubeDao:
-    def __init__(self):
-        config.load_kube_config()
-        self.client = client.CoreV1Api()
-
     def list_all_nodes(self):
         node_list = self.client.list_node()
         nodes = []
@@ -22,23 +18,33 @@ class KubeDao:
                 for condition in n.status.conditions:
                     node[condition.type] = condition.status
 
-            # Handle missing location label
             if n.metadata.labels and "location" in n.metadata.labels:
                 node["location"] = n.metadata.labels["location"]
             else:
                 node["location"] = None
             nodes.append(node)
 
+        print(f"All listed nodes:\n{nodes}")
         return nodes
 
-    def spawn_nodes(self, names):
-        subprocess.run(["minikube", "start", "--nodes", str(len(names))], check=True)
+    def spawn_nodes(self, name_pairs):
+        subprocess.run(
+            ["minikube", "start", "--nodes", str(len(name_pairs))], check=True
+        )
+        config.load_kube_config()
+        self.client = client.CoreV1Api()
 
         nodes = self.client.list_node().items
         for i, node in enumerate(nodes):
-            if i >= len(names):
+            if i >= len(name_pairs):
                 break
-            body = {"metadata": {"labels": {"location": names[i]}}}
+            body = {
+                "metadata": {
+                    "labels": {
+                        "location": name_pairs[i],
+                    }
+                }
+            }
             self.client.patch_node(node.metadata.name, body)
 
     def delete_node(self, node_name):
@@ -59,13 +65,13 @@ class KubeDao:
         return pods_by_nodes
 
     def create_pod(
-        self, pod_name, node_name, image="nginx", container_port=80, node_port=None
+        self,
+        pod_name,
+        node_name,
+        image="nginx",
+        container_port=80,
     ):
-        toleration = client.V1Toleration(
-            key="node-role.kubernetes.io/control-plane",
-            operator="Exists",
-            effect="NoSchedule",
-        )
+        print(f"Creating pod '{pod_name}' in node '{node_name}")
         pod_manifest = client.V1Pod(
             metadata=client.V1ObjectMeta(
                 name=pod_name, labels={"monster-name": pod_name}
@@ -78,13 +84,12 @@ class KubeDao:
                         ports=[client.V1ContainerPort(container_port=container_port)],
                     )
                 ],
-                tolerations=[toleration],
                 node_name=node_name,
             ),
         )
 
         self.client.create_namespaced_pod(namespace=NAMESPACE, body=pod_manifest)
-        self.expose_pod_port(pod_name, node_port=node_port)
+        node_port = self.expose_pod_port(pod_name)
         return node_port
 
     def expose_pod_port(self, pod_name, node_port=None):
@@ -103,8 +108,7 @@ class KubeDao:
         service = self.client.create_namespaced_service(
             namespace=NAMESPACE, body=service_spec
         )
-        node_port = service.spec.ports[0].node_port
-        return node_port
+        return service.spec.ports[0].node_port
 
     def delete_pod(self, pod_name):
         self.client.delete_namespaced_pod(name=pod_name, namespace=NAMESPACE)
@@ -117,12 +121,33 @@ class KubeDao:
         pod = self.get_pod(pod_name)
         self.delete_pod(pod_name)
 
-        # Recreate pod with same structure as create_pod
+        containers = []
+        for c in pod.spec.containers:
+            clean_c = client.V1Container(
+                name=c.name,
+                image=c.image,
+                ports=c.ports,
+                env=c.env,
+                command=c.command,
+                args=c.args,
+                resources=c.resources,
+                volume_mounts=[
+                    vm
+                    for vm in (c.volume_mounts or [])
+                    if not vm.name.startswith("kube-api-access")
+                ],
+            )
+            containers.append(clean_c)
+
         pod_manifest = client.V1Pod(
             metadata=client.V1ObjectMeta(name=pod_name, labels=pod.metadata.labels),
             spec=client.V1PodSpec(
-                containers=pod.spec.containers,
-                tolerations=pod.spec.tolerations,
+                containers=containers,
+                volumes=[
+                    v
+                    for v in (pod.spec.vollumes or [])
+                    if not v.name.startswith("kube-api-access")
+                ],
                 node_name=target_node,
             ),
         )
