@@ -31,7 +31,7 @@ def join_url(ip, port):
 
 
 class ControllerServer:
-    def __init__(self, host="0.0.0.0", port=8000):
+    def __init__(self):
         self.players_by_id = {}
         self.player_ids_by_name = {}
         self.ip = None
@@ -150,5 +150,5 @@ class ControllerServer:
             self.node_name_by_location[node["location"]] = node["name"]
         print(f"Node initialization succeeded")
 
-    def run(self, host="0.0.0.0", port=8000, debug=True):
+    def run(self, host="0.0.0.0", port=11000, debug=True):
         self.app.run(host=host, port=port, debug=debug)
