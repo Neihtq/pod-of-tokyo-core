@@ -3,7 +3,17 @@ import random
 from flask import Flask, jsonify, request
 from kubernetes.kube_dao import KubeDao
 
-MONSTER_NAMES = []
+MONSTER_NAMES = [
+    "Alienoid",
+    "Boogie Woogie",
+    "Giga Zaur",
+    "The King",
+    "Kraken",
+    "Meka Dragon",
+    "Pandakai",
+    "Pumpkin Jack",
+    "Space Penguin",
+]
 
 
 def join_url(ip, port):
@@ -53,7 +63,7 @@ class ControllerServer:
                 self.player_ids_by_name[name] = player_id
 
                 self.beginning_port += 1
-                print(f"Successfully created pod '{name}' listening on f{pod_url}")
+                print(f"Successfully created pod '{name}' listening on {pod_url}")
 
             return jsonify({"players": players})
 
@@ -81,7 +91,7 @@ class ControllerServer:
 
             pod_name = self.players_by_id[player_id][0]
             self.kube_dao.move_pod(pod_name, location)
-            return jsonify({"satus": "success"})
+            return jsonify({"status": "success"})
 
         @self.app.route("/destroyPod", methods=["POST"])
         def destroy_pod():
@@ -105,3 +115,6 @@ class ControllerServer:
                     response["outside"] = self.player_ids_by_name[pods]
 
             return jsonify(response)
+
+    def run(self, host="0.0.0.0", port=8000, debug=True):
+        self.app.run(host=host, port=port, debug=debug)
