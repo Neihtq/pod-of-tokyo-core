@@ -63,8 +63,8 @@ class KubeDao:
     ):
         toleration = client.V1Toleration(
             key="node-role.kubernetes.io/control-plane",
-            operator="Exists"
-            effect="NoSchedule"
+            operator="Exists",
+            effect="NoSchedule",
         )
         pod_manifest = client.V1Pod(
             metadata=client.V1ObjectMeta(
@@ -78,7 +78,7 @@ class KubeDao:
                         ports=[client.V1ContainerPort(container_port=container_port)],
                     )
                 ],
-                tolerations=[toleration]
+                tolerations=[toleration],
                 node_name=node_name,
             ),
         )

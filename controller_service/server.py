@@ -1,7 +1,7 @@
 import random
 
 from flask import Flask, jsonify, request
-from kubernetes.kube_dao import KubeDao
+from kube.kube_dao import KubeDao
 
 MONSTER_NAMES = [
     "Alienoid",
