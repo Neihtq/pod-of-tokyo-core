@@ -1,4 +1,5 @@
 import subprocess
+import time
 from collections import defaultdict
 
 from kubernetes import client, config
@@ -131,6 +132,7 @@ class KubeDao:
         return pod
 
     def move_pod(self, pod_name, target_node):
+        print(f"Moving pod '{pod_name}' to node '{target_node}'")
         pod = self.get_pod(pod_name)
         self.delete_pod(pod_name)
 
@@ -169,3 +171,27 @@ class KubeDao:
 
     def get_ip(self):
         return subprocess.check_output(["minikube", "ip"], text=True).strip()
+
+    def wait_for_pod_deletion(self, pod_name, namespace=NAMESPACE, timeout=60):
+        for _ in range(timeout):
+            try:
+                self.client.read_namespaced_pod(pod_name, namespace)
+            except ApiException as e:
+                if e.status == 404:
+                    return
+                else:
+                    raise
+            time.sleep(1)
+        raise TimeoutError(f"Pod {pod_name} deletion timed out after {timeout} seconds")
+
+    def wait_for_ready(self, pod_name, namespace=NAMESPACE, timeout=120):
+        for _ in range(timeout):
+            pod = self.client.read_namespaced_pod(pod_name, namespace)
+            if pod.status.phase != "Running":
+                continue
+            conditions = pod.status.conditions or []
+            ready = any(c.type == "Ready" and c.status == " True" for c in conditions)
+            if ready:
+                return
+            time.sleep(2)
+        raise TimeoutError(f"Pod {pod_name} start up timed out after {timeout} seconds")

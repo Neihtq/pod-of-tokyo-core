@@ -125,11 +125,7 @@ class ControllerServer:
         def get_node_states():
             pods_by_nodes = self.kube_dao.list_all_pods()
             response = {}
-            print(pods_by_nodes)
-            print(self.player_ids_by_name)
-            print(self.players_by_id)
             for node_name, pods in pods_by_nodes.items():
-                print(node_name, pods)
                 if self.location_by_node_name[node_name] == "Tokyo City":
                     response[TOKYO_CITY_KEY] = self.player_ids_by_name[pods][0]
                 elif self.location_by_node_name[node_name] == "Tokyo Bay":
