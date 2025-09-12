@@ -37,7 +37,9 @@ class GameService:
         game_data = self.controller.init_game(self.players.keys())
         players = game_data["players"]
         for p in players:
-            self.players[p[0]] = PodClient(base_url=p[1], name=p[2], player_id=p[0])
+            self.players[p["playerId"]] = PodClient(
+                base_url=p["podUrl"], name=p["name"], player_id=p["playerId"]
+            )
             self.player_order.append(p[0])
 
         self.num_players_alive = len(self.player_order)

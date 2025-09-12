@@ -42,7 +42,7 @@ class KubeDao:
             self.client.patch_node(node.metadata.name, body)
 
     def delete_all_nodes(self):
-        subprocess.run(["minikube", "delete"], check=True)
+        subprocess.run(["minikube", "delete", "--all"], check=True)
 
     def list_all_pods(self):
         pods = self.client.list_pod_for_all_namespaces().items
@@ -106,21 +106,18 @@ class KubeDao:
 
     def move_pod(self, pod_name, target_node):
         pod = self.get_pod(pod_name)
-        
+
         self.delete_pod(pod_name)
 
         # Recreate pod with same structure as create_pod
         pod_manifest = client.V1Pod(
-            metadata=client.V1ObjectMeta(
-                name=pod_name, 
-                labels=pod.metadata.labels
-            ),
+            metadata=client.V1ObjectMeta(name=pod_name, labels=pod.metadata.labels),
             spec=client.V1PodSpec(
                 containers=pod.spec.containers,
                 node_name=target_node,
             ),
         )
-        
+
         self.client.create_namespaced_pod(namespace=NAMESPACE, body=pod_manifest)
 
     def get_ip(self):
