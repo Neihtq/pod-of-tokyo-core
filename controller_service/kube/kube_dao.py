@@ -6,6 +6,18 @@ from kubernetes.client.rest import ApiException
 
 NAMESPACE = "default"
 
+MONSTER_NAMES = {
+    "alienoid",
+    "boogie-woogie",
+    "giga-zaur",
+    "the-king",
+    "kraken",
+    "meka-dragon",
+    "pandakai",
+    "pumpkin-jack",
+    "space-penguin",
+}
+
 
 class KubeDao:
     def list_all_nodes(self):
@@ -56,10 +68,11 @@ class KubeDao:
     def list_all_pods(self):
         pods = self.client.list_pod_for_all_namespaces().items
 
+        print("PODS BY NAMES")
         pods_by_nodes = defaultdict(list)
         for pod in pods:
             node_name = pod.spec.node_name
-            if node_name:
+            if node_name and pod.metadata.name in MONSTER_NAMES:
                 pods_by_nodes[node_name].append(pod.metadata.name)
 
         return pods_by_nodes
@@ -145,7 +158,7 @@ class KubeDao:
                 containers=containers,
                 volumes=[
                     v
-                    for v in (pod.spec.vollumes or [])
+                    for v in (pod.spec.volumes or [])
                     if not v.name.startswith("kube-api-access")
                 ],
                 node_name=target_node,
