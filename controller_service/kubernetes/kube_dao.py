@@ -41,6 +41,9 @@ class KubeDao:
             body = {"metadata": {"labels": {"location": names[i]}}}
             self.client.patch_node(node.metadata.name, body)
 
+    def delete_node(self, node_name):
+        subprocess.run(["minikube", "node", "delete", node_name])
+
     def delete_all_nodes(self):
         subprocess.run(["minikube", "delete", "--all"], check=True)
 
@@ -50,7 +53,7 @@ class KubeDao:
         pods_by_nodes = defaultdict(list)
         for pod in pods:
             node_name = pod.spec.node_name
-            if node_name:  # Handle pods not yet scheduled
+            if node_name:
                 pods_by_nodes[node_name].append(pod.metadata.name)
 
         return pods_by_nodes
@@ -58,6 +61,11 @@ class KubeDao:
     def create_pod(
         self, pod_name, node_name, image="nginx", container_port=80, node_port=None
     ):
+        toleration = client.V1Toleration(
+            key="node-role.kubernetes.io/control-plane",
+            operator="Exists"
+            effect="NoSchedule"
+        )
         pod_manifest = client.V1Pod(
             metadata=client.V1ObjectMeta(
                 name=pod_name, labels={"monster-name": pod_name}
@@ -70,6 +78,7 @@ class KubeDao:
                         ports=[client.V1ContainerPort(container_port=container_port)],
                     )
                 ],
+                tolerations=[toleration]
                 node_name=node_name,
             ),
         )
@@ -106,7 +115,6 @@ class KubeDao:
 
     def move_pod(self, pod_name, target_node):
         pod = self.get_pod(pod_name)
-
         self.delete_pod(pod_name)
 
         # Recreate pod with same structure as create_pod
@@ -114,6 +122,7 @@ class KubeDao:
             metadata=client.V1ObjectMeta(name=pod_name, labels=pod.metadata.labels),
             spec=client.V1PodSpec(
                 containers=pod.spec.containers,
+                tolerations=pod.spec.tolerations,
                 node_name=target_node,
             ),
         )

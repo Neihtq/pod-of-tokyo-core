@@ -29,7 +29,8 @@ class ControllerServer:
         self.players_by_id = {}
         self.player_ids_by_name = {}
         self.ip = None
-        self.node_name_by_id = {}
+        self.location_by_node_name = {}
+        self.node_name_by_location = {}
 
         @self.app.route("/")
         def ping():
@@ -44,7 +45,8 @@ class ControllerServer:
 
             nodes = self.kube_dao.list_all_nodes()
             for node in nodes:
-                self.node_name_by_id[node["name"]] = node["location"]
+                self.location_by_node_name[node["name"]] = node["location"]
+                self.location_by_node_name[node["location"]] = node["name"]
 
             data = request.get_json()
             player_ids = data.get("playerIds")
@@ -69,7 +71,17 @@ class ControllerServer:
 
         @self.app.route("/destroyTokyoBay", methods=["POST"])
         def destroy_tokyo_bay():
-            return jsonify({"playerId": "place_holder"})
+            tokyo_bay_node_name = self.node_name_by_location["Tokyo Bay"]
+
+            pods_by_nodes = self.kube_dao.list_all_pods()
+            pod_in_bay = pods_by_nodes[tokyo_bay_node_name][0]
+
+            outside_node_name = self.node_name_by_location["Outside"]
+            self.kube_dao.move_pod(pod_name=pod_in_bay, target_node=outside_node_name)
+
+            self.kube_dao.delete_node(tokyo_bay_node_name)
+
+            return jsonify({"playerId": pod_in_bay})
 
         @self.app.route("/getPodUrl", methods=["POST"])
         def get_pod_url():
@@ -106,10 +118,10 @@ class ControllerServer:
         def get_node_states():
             pods_by_nodes = self.kube_dao.list_all_pods()
             response = {}
-            for location, pods in pods_by_nodes.items():
-                if self.node_name_by_id[location] == "Tokyo City":
+            for node_name, pods in pods_by_nodes.items():
+                if self.location_by_node_name[node_name] == "Tokyo City":
                     response["tokyoCity"] = self.player_ids_by_name[pods][0]
-                elif self.node_name_by_id[location] == "Tokyo Bay":
+                elif self.location_by_node_name[node_name] == "Tokyo Bay":
                     response["tokyoBay"] = self.player_ids_by_name[pods][0]
                 else:
                     response["outside"] = self.player_ids_by_name[pods]
