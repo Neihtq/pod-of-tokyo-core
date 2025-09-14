@@ -1,11 +1,11 @@
 from collections import Counter
 
 from flask_socketio import join_room
-from middleware.controller_client import ControllerClient
-from middleware.pod_client import PodClient
-from model import Commands, DiceSymbols, Location
-from service.dice_service import roll_dices
 
+from game_service.middleware.controller_client import ControllerClient
+from game_service.middleware.pod_client import PodClient
+from game_service.model import Commands, DiceSymbols, Location
+from game_service.service.dice_service import roll_dices
 from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
 
 WINNING_CONDITION = 20

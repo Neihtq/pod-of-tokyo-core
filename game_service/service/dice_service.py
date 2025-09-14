@@ -1,6 +1,6 @@
 import random
 
-from model import DiceSymbols
+from game_service.model import DiceSymbols
 
 SYMBOLS = [
     DiceSymbols.ONE,

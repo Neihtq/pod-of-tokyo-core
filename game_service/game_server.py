@@ -2,7 +2,8 @@ from typing import Protocol, cast
 
 from flask import Flask, request
 from flask_socketio import SocketIO, emit
-from service.game_service import GameService
+
+from game_service.service.game_service import GameService
 
 
 class SocketRequest(Protocol):

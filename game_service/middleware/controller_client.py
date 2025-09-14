@@ -1,4 +1,4 @@
-from utils import http_utils as http
+from game_service.utils import http_utils as http
 
 
 class ControllerClient:
