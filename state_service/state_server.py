@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request
-
-from state_service.monster_db.monster_db_dao import MonsterDbDao
+from monster_db.monster_db_dao import MonsterDbDao
 
 
 class StateServer:
