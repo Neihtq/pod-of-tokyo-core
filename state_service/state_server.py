@@ -43,3 +43,7 @@ class StateServer:
             updated_location = self.monster_db_dao.update_location(location=location)
 
             return jsonify({"location": updated_location})
+
+        @self.app.route("/getState", methods=["POST"])
+        def get_state(self):
+            return jsonify(self.monster_db_dao.get_state())

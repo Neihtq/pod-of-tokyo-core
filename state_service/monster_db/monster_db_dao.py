@@ -138,4 +138,11 @@ class MonsterDbDao:
         SELECT name, health, score, energy, location FROM "{TABLE_NAME}" WHERE id = {self.player_id}
         """
         )
-        return self.cursor.fetchone()
+        result = self.cursor.fetchone()
+        return {
+            "name": result[0],
+            "health": result[1],
+            "score": result[2],
+            "energy": result[3],
+            "location": result[4],
+        }
