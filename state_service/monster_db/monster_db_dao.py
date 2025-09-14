@@ -19,12 +19,15 @@ class MonsterDbDao:
         self.cursor = self.connection.cursor()
         self.player_id = os.environ["PLAYER_ID"]
         self.monster_name = os.environ["MONSTER_NAME"]
+        self.create_table()
+        self.create_monster()
 
     def create_table(self):
         self.cursor.execute(
             f"""
         CREATE TABLE IF NOT EXISTS "{TABLE_NAME}"(
             id SERIAL PRIMARY KEY,
+            player_id INT,
             name TEXT NOT NULL,
             health INT,
             score INT,
@@ -38,9 +41,20 @@ class MonsterDbDao:
     def create_monster(self):
         self.cursor.execute(
             f"""
-        INSERT INTO "{TABLE_NAME}" (id, name, health, score, energy, location)
-        VALUES ({self.player_id}, {self.monster_name}, 10, 0, 0, {OUTSIDE_KEY})
-        """
+        SELECT COUNT(*) FROM "{TABLE_NAME}" WHERE player_id = %s
+        """,
+            (self.player_id),
+        )
+        count = self.cursor.fetchone()[0]
+        if count > 0:
+            return
+
+        self.cursor.execute(
+            f"""
+        INSERT INTO "{TABLE_NAME}" (player_id, name, health, score, energy, location)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        """,
+            (self.player_id, self.monster_name, 10, 0, 0, OUTSIDE_KEY),
         )
         self.connection.commit()
 
@@ -48,9 +62,10 @@ class MonsterDbDao:
         self.cursor.execute(
             f"""
         UPDATE "{TABLE_NAME}"
-        SET health = health - {amount}
-        WHERE id = {self.player_id}
-        """
+        SET health = health - %s
+        WHERE player_id = %s
+        """,
+            (amount, self.player_id),
         )
         self.connection.commit()
         return self.get_attribute("health")
@@ -59,9 +74,10 @@ class MonsterDbDao:
         self.cursor.execute(
             f"""
         UPDATE "{TABLE_NAME}"
-        SET health = health + {amount}
-        WHERE id = {self.player_id}
-        """
+        SET health = health + %s
+        WHERE player_id = %s
+        """,
+            (amount, self.player_id),
         )
         self.connection.commit()
         return self.get_attribute("health")
@@ -70,9 +86,10 @@ class MonsterDbDao:
         self.cursor.execute(
             f"""
         UPDATE "{TABLE_NAME}"
-        SET score = score + {amount}
-        WHERE id = {self.player_id}
-        """
+        SET score = score + %s
+        WHERE player_id = %s
+        """,
+            (amount, self.player_id),
         )
         self.connection.commit()
         return self.get_attribute("score")
@@ -81,9 +98,10 @@ class MonsterDbDao:
         self.cursor.execute(
             f"""
         UPDATE "{TABLE_NAME}"
-        SET score = score + {amount}
-        WHERE id = {self.player_id}
-        """
+        SET score = score - %s
+        WHERE player_id = %s
+        """,
+            (amount, self.player_id),
         )
         self.connection.commit()
         return self.get_attribute("score")
@@ -92,9 +110,10 @@ class MonsterDbDao:
         self.cursor.execute(
             f"""
         UPDATE "{TABLE_NAME}"
-        SET energy = energy + {amount}
-        WHERE id = {self.player_id}
-        """
+        SET energy = energy + %s
+        WHERE player_id = %s
+        """,
+            (amount, self.player_id),
         )
         self.connection.commit()
         return self.get_attribute("energy")
@@ -103,9 +122,10 @@ class MonsterDbDao:
         self.cursor.execute(
             f"""
         UPDATE "{TABLE_NAME}"
-        SET energy = energy + {amount}
-        WHERE id = {self.player_id}
-        """
+        SET energy = energy - %s
+        WHERE player_id = %s
+        """,
+            (amount, self.player_id),
         )
         self.connection.commit()
         return self.get_attribute("energy")
@@ -114,9 +134,10 @@ class MonsterDbDao:
         self.cursor.execute(
             f"""
         UPDATE "{TABLE_NAME}"
-        SET location = {location}
-        WHERE id = {self.player_id}
-        """
+        SET location = %s
+        WHERE player_id = %s
+        """,
+            (location, self.player_id),
         )
         self.connection.commit()
         return self.get_attribute("location")
@@ -124,8 +145,9 @@ class MonsterDbDao:
     def get_attribute(self, attribute):
         self.cursor.execute(
             f"""
-        SELECT {attribute} FROM "{TABLE_NAME}" WHERE id = {self.player_id}
-        """
+        SELECT {attribute} FROM "{TABLE_NAME}" WHERE player_id = %s
+        """,
+            (self.player_id),
         )
         result = self.cursor.fetchone()
         return result[0] if result else None
@@ -133,8 +155,9 @@ class MonsterDbDao:
     def get_stats(self):
         self.cursor.execute(
             f"""
-        SELECT name, health, score, energy, location FROM "{TABLE_NAME}" WHERE id = {self.player_id}
-        """
+        SELECT name, health, score, energy, location FROM "{TABLE_NAME}" WHERE player_id = %s
+        """,
+            (self.player_id),
         )
         result = self.cursor.fetchone()
         return {

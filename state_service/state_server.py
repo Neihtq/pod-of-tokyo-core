@@ -1,12 +1,12 @@
 from flask import Flask, jsonify, request
-from monster_db.monster_db_dao import MonsterDbDao
+
+from state_service.monster_db.monster_db_dao import MonsterDbDao
 
 
 class StateServer:
     def __init__(self):
         self.app = Flask(__name__)
         self.monster_db_dao = MonsterDbDao()
-        self.monster_db_dao.create_monster()
 
         @self.app.route("/")
         def ping():
@@ -24,7 +24,7 @@ class StateServer:
         def heal():
             data = request.get_json()
             health = data.get("health")
-            updated_health = self.monster_db_dao.increase_energy(amount=health)
+            updated_health = self.monster_db_dao.increase_health(amount=health)
 
             return jsonify({"health": updated_health})
 
@@ -36,6 +36,14 @@ class StateServer:
 
             return jsonify({"score": updated_score})
 
+        @self.app.route("/chargeEnergy", methods=["POST"])
+        def charge_energy():
+            data = request.get_json()
+            energy = data.get("energy")
+            updated_energy = self.monster_db_dao.increase_energy(amount=energy)
+
+            return jsonify({"energy": updated_energy})
+
         @self.app.route("/updateLocation", methods=["POST"])
         def update_location():
             data = request.get_json()
@@ -44,6 +52,6 @@ class StateServer:
 
             return jsonify({"location": updated_location})
 
-        @self.app.route("/getState", methods=["POST"])
-        def get_state(self):
-            return jsonify(self.monster_db_dao.get_state())
+        @self.app.route("/getStats", methods=["POST"])
+        def get_stats():
+            return jsonify(self.monster_db_dao.get_stats())
