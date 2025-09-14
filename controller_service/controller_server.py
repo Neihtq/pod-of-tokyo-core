@@ -154,6 +154,3 @@ class ControllerServer:
                 else:
                     response[OUTSIDE_KEY] = pods
             return jsonify(response)
-
-    def run(self, host="0.0.0.0", port=11000, debug=True):
-        self.app.run(host=host, port=port, debug=debug)

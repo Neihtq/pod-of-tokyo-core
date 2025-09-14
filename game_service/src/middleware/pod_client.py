@@ -10,11 +10,11 @@ class PodClient:
     def slap(self, damage):
         return http.post(self.base_url, "slap", {"damage": damage})
 
-    def heal(self, life):
-        return http.post(self.base_url, "heal", {"life": life})
+    def heal(self, health):
+        return http.post(self.base_url, "heal", {"health": health})
 
-    def update_score(self, score):
-        return http.post(self.base_url, "updateScore", {"score": score})
+    def update_score(self, points):
+        return http.post(self.base_url, "updateScore", {"points": points})
 
     def charge_energy(self, energy):
         return http.post(self.base_url, "chargeEnergy", {"energy": energy})
