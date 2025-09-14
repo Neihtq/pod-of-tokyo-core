@@ -2,11 +2,9 @@ import os
 
 import psycopg2
 
-TABLE_NAME = "MonsterStateStore"
+from pod_of_tokyo_commons.constants import OUTSIDE_KEY
 
-TOKYO_CITY_KEY = "tokyo-city"
-TOKYO_BAY_KEY = "tokyo-bay"
-OUTSIDE_KEY = "outside"
+TABLE_NAME = "MonsterStateStore"
 
 
 class MonsterDbDao:

@@ -5,17 +5,7 @@ from collections import defaultdict
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
-MONSTER_NAMES = {
-    "alienoid",
-    "boogie-woogie",
-    "giga-zaur",
-    "the-king",
-    "kraken",
-    "meka-dragon",
-    "pandakai",
-    "pumpkin-jack",
-    "space-penguin",
-}
+from pod_of_tokyo_commons.constants import MONSTER_NAMES_SET
 
 
 class KubeDao:
@@ -56,7 +46,7 @@ class KubeDao:
         pods_by_namespaces = defaultdict(list)
         for pod in pods:
             namespace = pod.metadata.namespace
-            if namespace and pod.metadata.name in MONSTER_NAMES:
+            if namespace and pod.metadata.name in MONSTER_NAMES_SET:
                 pods_by_namespaces[namespace].append(pod.metadata.name)
 
         return pods_by_namespaces

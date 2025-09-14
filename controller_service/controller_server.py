@@ -1,30 +1,15 @@
 import random
-import subprocess
 
 from flask import Flask, jsonify, request
 from kube.kube_dao import KubeDao
 
-MONSTER_NAMES = [
-    "alienoid",
-    "boogie-woogie",
-    "giga-zaur",
-    "the-king",
-    "kraken",
-    "meka-dragon",
-    "pandakai",
-    "pumpkin-jack",
-    "space-penguin",
-]
-
-TOKYO_CITY_KEY = "tokyo-city"
-TOKYO_BAY_KEY = "tokyo-bay"
-OUTSIDE_KEY = "outside"
-
-LOCATION_NAMES = [
-    TOKYO_CITY_KEY,
-    TOKYO_BAY_KEY,
+from pod_of_tokyo_commons.constants import (
+    LOCATION_NAMES,
+    MONSTER_NAMES,
     OUTSIDE_KEY,
-]
+    TOKYO_BAY_KEY,
+    TOKYO_CITY_KEY,
+)
 
 
 def join_url(ip, port):
@@ -129,6 +114,7 @@ class ControllerServer:
                 from_namespace=curr_namespace,
                 target_namespace=target_namespace,
             )
+
             return jsonify({"status": "success"})
 
         @self.app.route("/destroyPod", methods=["POST"])

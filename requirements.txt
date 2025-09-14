@@ -3,3 +3,4 @@ flask-socketio
 requests
 kubernetes
 psycopg2-binary
+setuptool

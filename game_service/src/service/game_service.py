@@ -6,13 +6,10 @@ from middleware.pod_client import PodClient
 from model import Commands, DiceSymbols, Location
 from service.dice_service import roll_dices
 
+from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
+
 WINNING_CONDITION = 20
-
 ROOM = "king-of-tokyo"
-
-TOKYO_CITY_KEY = "tokyo-city"
-TOKYO_BAY_KEY = "tokyo-bay"
-OUTSIDE_KEY = "outside"
 
 
 class GameService:
