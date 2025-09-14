@@ -1,4 +1,5 @@
 import random
+import subprocess
 
 from flask import Flask, jsonify, request
 from kube.kube_dao import KubeDao
@@ -32,15 +33,14 @@ def join_url(ip, port):
 
 class ControllerServer:
     def __init__(self):
-        self.players_by_id = {}
-        self.player_ids_by_name = {}
-        self.ip = None
-        self.location_by_node_name = {}
-        self.node_name_by_location = {}
-
         self.app = Flask(__name__)
         self.kube_dao = KubeDao()
-        self.setup_nodes()
+        self.ip = self.kube_dao.get_ip()
+
+        self.players_by_id = {}
+        self.player_ids_by_name = {}
+        self.location_by_namespace = {}
+        self.namespace_by_location = {}
 
         @self.app.route("/")
         def ping():
@@ -50,15 +50,21 @@ class ControllerServer:
         def init_game():
             data = request.get_json()
             player_ids = data.get("playerIds")
-            monster_names = random.sample(MONSTER_NAMES, len(player_ids))
 
+            self.kube_dao.create_namespaces(LOCATION_NAMES)
+            namespaces = self.kube_dao.list_all_namespaces()
+            for ns in namespaces:
+                self.location_by_namespace[ns["name"]] = ns["location"]
+                self.namespace_by_location[ns["location"]] = ns["name"]
+
+            monster_names = random.sample(MONSTER_NAMES, len(player_ids))
             players = []
             for i in range(len(player_ids)):
                 player_id = player_ids[i]
                 pod_name = monster_names[i]
                 port = self.kube_dao.create_pod(
                     pod_name=pod_name,
-                    node_name=self.node_name_by_location[OUTSIDE_KEY],
+                    namespace=self.namespace_by_location[OUTSIDE_KEY],
                 )
                 pod_url = join_url(self.ip, port)
                 players.append(
@@ -77,15 +83,19 @@ class ControllerServer:
 
         @self.app.route("/destroyTokyoBay", methods=["POST"])
         def destroy_tokyo_bay():
-            tokyo_bay_node_name = self.node_name_by_location[TOKYO_BAY_KEY]
+            tokyo_bay_ns_name = self.namespace_by_location[TOKYO_BAY_KEY]
 
-            pods_by_nodes = self.kube_dao.list_all_pods()
-            pod_in_bay = pods_by_nodes[tokyo_bay_node_name][0]
+            pods_by_namespaces = self.kube_dao.list_all_pods()
+            pod_in_bay = pods_by_namespaces[tokyo_bay_ns_name][0]
 
-            outside_node_name = self.node_name_by_location[OUTSIDE_KEY]
-            self.kube_dao.move_pod(pod_name=pod_in_bay, target_node=outside_node_name)
+            outside_namespace = self.namespace_by_location[OUTSIDE_KEY]
+            self.kube_dao.move_pod(
+                pod_name=pod_in_bay,
+                from_namespace=tokyo_bay_ns_name,
+                target_namespace=outside_namespace,
+            )
 
-            self.kube_dao.delete_node(tokyo_bay_node_name)
+            self.kube_dao.delete_namespace(tokyo_bay_ns_name)
 
             return jsonify({"playerId": pod_in_bay})
 
@@ -98,7 +108,7 @@ class ControllerServer:
 
         @self.app.route("/destroyAll", methods=["POST"])
         def destroy_all():
-            self.kube_dao.delete_all_nodes()
+            self.kube_dao.delete_all_namespaces()
             return jsonify({"status": "success"})
 
         @self.app.route("/relocate", methods=["POST"])
@@ -106,49 +116,44 @@ class ControllerServer:
             data = request.get_json()
             player_id = data.get("playerId")
             target_location = data.get("targetLocation")
+            curr_location = data.get("currentLocation")
 
-            target_node = self.node_name_by_location[target_location]
+            target_namespace = self.namespace_by_location[target_location]
+            curr_namespace = self.namespace_by_location[curr_location]
             pod_name = self.players_by_id[player_id][0]
             print(
-                f"Receive request to relocate '{pod_name}' ({player_id}) to '{target_location}' ({target_node})"
+                f"Receive request to relocate '{pod_name}' ({player_id}) to '{target_location}' ({target_namespace})"
             )
-            self.kube_dao.move_pod(pod_name, target_node)
+            self.kube_dao.move_pod(
+                pod_name,
+                from_namespace=curr_namespace,
+                target_namespace=target_namespace,
+            )
             return jsonify({"status": "success"})
 
         @self.app.route("/destroyPod", methods=["POST"])
         def destroy_pod():
             data = request.get_json()
             player_id = data.get("playerId")
+            player_location = data.get("location")
 
             pod_name = self.players_by_id[player_id][0]
-            self.kube_dao.delete_pod(pod_name)
+            self.kube_dao.delete_pod(pod_name, player_location)
             return jsonify({"status": "success"})
 
-        @self.app.route("/getNodeStates", methods=["POST"])
-        def get_node_states():
-            pods_by_nodes = self.kube_dao.list_all_pods()
+        @self.app.route("/getNodeState", methods=["POST"])
+        def get_node_state():
+            pods_by_namespace = self.kube_dao.list_all_pods()
             response = {}
 
-            for node_name, pods in pods_by_nodes.items():
-                if self.location_by_node_name[node_name] == TOKYO_CITY_KEY:
+            for namespace, pods in pods_by_namespace.items():
+                if self.location_by_namespace[namespace] == TOKYO_CITY_KEY:
                     response[TOKYO_CITY_KEY] = pods[0]
-                elif self.location_by_node_name[node_name] == TOKYO_BAY_KEY:
+                elif self.location_by_namespace[namespace] == TOKYO_BAY_KEY:
                     response[TOKYO_BAY_KEY] = pods[0]
                 else:
                     response[OUTSIDE_KEY] = pods
             return jsonify(response)
-
-    def setup_nodes(self):
-        print(f"Initialize minikube with nodes: {LOCATION_NAMES}")
-        self.kube_dao.spawn_nodes(LOCATION_NAMES)
-        self.ip = self.kube_dao.get_ip()
-        print(f"Minikube started successfully. IP address: {self.ip}")
-
-        nodes = self.kube_dao.list_all_nodes()
-        for node in nodes:
-            self.location_by_node_name[node["name"]] = node["location"]
-            self.node_name_by_location[node["location"]] = node["name"]
-        print(f"Node initialization succeeded")
 
     def run(self, host="0.0.0.0", port=11000, debug=True):
         self.app.run(host=host, port=port, debug=debug)

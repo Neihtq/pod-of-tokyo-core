@@ -17,17 +17,23 @@ class ControllerClient:
     def destroy_all(self):
         return http.post(self.base_url, "destroyAll")
 
-    def relocate(self, player_id, target_location):
+    def relocate(self, player_id, from_location, target_location):
         return http.post(
             self.base_url,
             "relocate",
-            {"playerId": player_id, "targetLocation": target_location},
+            {
+                "playerId": player_id,
+                "currentLocation": from_location,
+                "targetLocation": target_location,
+            },
         )
 
-    def destroy_pod(self, player_id):
-        return http.post(self.base_url, "destroyPod", {"player_id": player_id})
+    def destroy_pod(self, player_id, location):
+        return http.post(
+            self.base_url, "destroyPod", {"player_id": player_id, "location": location}
+        )
 
-    def get_node_states(self):
+    def get_node_state(self):
         """
         Response:
         {
@@ -36,4 +42,4 @@ class ControllerClient:
             "outside": [player_id]
         }
         """
-        return http.post(self.base_url, "getNodeStates")
+        return http.post(self.base_url, "getNodeState")
