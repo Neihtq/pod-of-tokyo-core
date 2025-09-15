@@ -159,7 +159,7 @@ class MonsterDbDao:
             f"""
         SELECT name, health, score, energy, location FROM "{TABLE_NAME}" WHERE player_id = %s
         """,
-            (self.player_id),
+            (self.player_id,),
         )
         result = self.cursor.fetchone()
         return {
