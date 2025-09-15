@@ -43,7 +43,7 @@ class MonsterDbDao:
             f"""
         SELECT COUNT(*) FROM "{TABLE_NAME}" WHERE player_id = %s
         """,
-            (self.player_id),
+            (self.player_id,),
         )
         count = self.cursor.fetchone()[0]
         if count > 0:
