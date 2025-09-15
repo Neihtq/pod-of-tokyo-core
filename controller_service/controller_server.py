@@ -1,8 +1,9 @@
 import random
 
 from flask import Flask, jsonify, request
-from kube.kube_dao import KubeDao
 
+from controller_service.kube.kube_dao import KubeDao
+from controller_service.middleware import pod_client
 from pod_of_tokyo_commons.constants import (
     LOCATION_NAMES,
     MONSTER_NAMES,
@@ -20,12 +21,11 @@ class ControllerServer:
     def __init__(self):
         self.app = Flask(__name__)
         self.kube_dao = KubeDao()
-        self.ip = self.kube_dao.get_ip()
+        self.ip = "http://127.0.0.1"
+        self.state_service_port = 33333
 
         self.players_by_id = {}
         self.player_ids_by_name = {}
-        self.location_by_namespace = {}
-        self.namespace_by_location = {}
 
         @self.app.route("/")
         def ping():
@@ -38,9 +38,6 @@ class ControllerServer:
 
             self.kube_dao.create_namespaces(LOCATION_NAMES)
             namespaces = self.kube_dao.list_all_namespaces()
-            for ns in namespaces:
-                self.location_by_namespace[ns["name"]] = ns["location"]
-                self.namespace_by_location[ns["location"]] = ns["name"]
 
             monster_names = random.sample(MONSTER_NAMES, len(player_ids))
             players = []
@@ -49,9 +46,11 @@ class ControllerServer:
                 pod_name = monster_names[i]
                 port = self.kube_dao.create_pod(
                     pod_name=pod_name,
-                    namespace=self.namespace_by_location[OUTSIDE_KEY],
+                    namespace=OUTSIDE_KEY,
+                    player_id=player_id,
+                    service_port=self.state_service_port,
                 )
-                pod_url = join_url(self.ip, port)
+                pod_url = join_url(self.ip, self.state_service_port)
                 players.append(
                     {
                         "playerId": player_id,
@@ -59,30 +58,40 @@ class ControllerServer:
                         "podUrl": pod_url,
                     }
                 )
-                self.players_by_id[player_id] = (pod_name, pod_url)
+                self.players_by_id[player_id] = (
+                    pod_name,
+                    pod_url,
+                    self.state_service_port,
+                )
                 self.player_ids_by_name[pod_name] = player_id
+                self.state_service_port += 1
 
                 print(f"Successfully created pod '{pod_name}' listening on {pod_url}")
 
-            return jsonify({"players": players, "locations": {}})
+            print(self.players_by_id)
+            print(self.player_ids_by_name)
+
+            return jsonify({"players": players, "locations": namespaces})
 
         @self.app.route("/destroyTokyoBay", methods=["POST"])
         def destroy_tokyo_bay():
-            tokyo_bay_ns_name = self.namespace_by_location[TOKYO_BAY_KEY]
-
             pods_by_namespaces = self.kube_dao.list_all_pods()
-            pod_in_bay = pods_by_namespaces[tokyo_bay_ns_name][0]
+            pod_in_bay = pods_by_namespaces[TOKYO_BAY_KEY][0]
+            player_id = self.player_ids_by_name[pod_in_bay]
 
-            outside_namespace = self.namespace_by_location[OUTSIDE_KEY]
             self.kube_dao.move_pod(
                 pod_name=pod_in_bay,
-                from_namespace=tokyo_bay_ns_name,
-                target_namespace=outside_namespace,
+                from_namespace=TOKYO_BAY_KEY,
+                target_namespace=OUTSIDE_KEY,
+                service_port=self.players_by_id[player_id][-1],
             )
 
-            self.kube_dao.delete_namespace(tokyo_bay_ns_name)
+            url = self.players_by_id[player_id][1]
+            pod_client.update_monster_location(url=url, location=OUTSIDE_KEY)
 
-            return jsonify({"playerId": pod_in_bay})
+            self.kube_dao.delete_namespace(TOKYO_BAY_KEY)
+
+            return jsonify({"playerId": player_id})
 
         @self.app.route("/getPodUrl", methods=["POST"])
         def get_pod_url():
@@ -103,17 +112,19 @@ class ControllerServer:
             target_location = data.get("targetLocation")
             curr_location = data.get("currentLocation")
 
-            target_namespace = self.namespace_by_location[target_location]
-            curr_namespace = self.namespace_by_location[curr_location]
             pod_name = self.players_by_id[player_id][0]
             print(
-                f"Receive request to relocate '{pod_name}' ({player_id}) to '{target_location}' ({target_namespace})"
+                f"Receive request to relocate '{pod_name}' ({player_id}) to '{target_location}' ({target_location})"
             )
             self.kube_dao.move_pod(
                 pod_name,
-                from_namespace=curr_namespace,
-                target_namespace=target_namespace,
+                from_namespace=curr_location,
+                target_namespace=target_location,
+                service_port=self.players_by_id[player_id][-1],
             )
+
+            url = self.players_by_id[player_id][1]
+            pod_client.update_monster_location(url=url, location=target_location)
 
             return jsonify({"status": "success"})
 
@@ -133,9 +144,9 @@ class ControllerServer:
             response = {}
 
             for namespace, pods in pods_by_namespace.items():
-                if self.location_by_namespace[namespace] == TOKYO_CITY_KEY:
+                if namespace == TOKYO_CITY_KEY:
                     response[TOKYO_CITY_KEY] = pods[0]
-                elif self.location_by_namespace[namespace] == TOKYO_BAY_KEY:
+                elif namespace == TOKYO_BAY_KEY:
                     response[TOKYO_BAY_KEY] = pods[0]
                 else:
                     response[OUTSIDE_KEY] = pods

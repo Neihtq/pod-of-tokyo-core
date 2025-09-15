@@ -4,3 +4,4 @@ requests
 kubernetes
 psycopg2-binary
 setuptool
+python-dotenv

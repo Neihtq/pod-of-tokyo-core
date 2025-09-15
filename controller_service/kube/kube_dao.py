@@ -1,11 +1,19 @@
+import os
 import subprocess
 import time
 from collections import defaultdict
 
+from dotenv import load_dotenv
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from pod_of_tokyo_commons.constants import MONSTER_NAMES_SET
+
+load_dotenv()
+
+STATE_SERVICE_DOCKER_IMAGE = "neiht/state-service:latest"
+DB_HOST = "postgres-service.default.svc.cluster.local"
+DB_PORT = "5432"
 
 
 class KubeDao:
@@ -18,10 +26,9 @@ class KubeDao:
         namespace_list = self.client.list_namespace()
         namespaces = []
         for ns in namespace_list.items:
-            namespace = {"name": ns.metadata.name}
-            if ns.metadata.labels and "location" in ns.metadata.labels:
-                namespace["location"] = ns.metadata.labels["location"]
-                namespaces.append(namespace)
+            name = ns.metadata.name
+            if ns.metadata.name in MONSTER_NAMES_SET:
+                namespaces.append(name)
 
         print(f"All listed namespaces:\n{namespaces}")
         return namespaces
@@ -55,8 +62,9 @@ class KubeDao:
         self,
         pod_name,
         namespace,
-        image="nginx",
-        container_port=80,
+        player_id,
+        service_port,
+        image=STATE_SERVICE_DOCKER_IMAGE,
     ):
         print(f"Creating pod '{pod_name}' in '{namespace}")
         pod_manifest = client.V1Pod(
@@ -68,7 +76,25 @@ class KubeDao:
                     client.V1Container(
                         name=pod_name,
                         image=image,
-                        ports=[client.V1ContainerPort(container_port=container_port)],
+                        ports=[client.V1ContainerPort(container_port=service_port)],
+                        env=[
+                            client.V1EnvVar(
+                                name="DB_NAME", value=os.environ["DB_NAME"]
+                            ),
+                            client.V1EnvVar(
+                                name="DB_USER", value=os.environ["DB_USER"]
+                            ),
+                            client.V1EnvVar(
+                                name="DB_PASSWORD", value=os.environ["DB_PASSWORD"]
+                            ),
+                            client.V1EnvVar(name="DB_HOST", value=DB_HOST),
+                            client.V1EnvVar(name="DB_PORT", value=DB_PORT),
+                            client.V1EnvVar(name="PLAYER_ID", value=player_id),
+                            client.V1EnvVar(name="MONSTER_NAME", value=pod_name),
+                            client.V1EnvVar(
+                                name="SERVICE_PORT", value=str(service_port)
+                            ),
+                        ],
                     )
                 ],
                 node_name="minikube",
@@ -76,16 +102,18 @@ class KubeDao:
         )
 
         self.client.create_namespaced_pod(namespace=namespace, body=pod_manifest)
-        return self.expose_pod_port(pod_name, namespace)
+        return self.expose_pod_port(pod_name, namespace, service_port)
 
-    def expose_pod_port(self, pod_name, namespace):
+    def expose_pod_port(self, pod_name, namespace, service_port):
         service_name = f"{pod_name}-state-service"
         service_spec = client.V1Service(
             metadata=client.V1ObjectMeta(name=service_name),
             spec=client.V1ServiceSpec(
                 selector={"monster-name": pod_name},
-                type="NodePort",
-                ports=[client.V1ServicePort(port=80, target_port=80)],
+                type="LoadBalancer",
+                ports=[
+                    client.V1ServicePort(port=service_port, target_port=service_port)
+                ],
             ),
         )
 
@@ -97,12 +125,18 @@ class KubeDao:
     def delete_pod(self, pod_name, namespace):
         print(f"Deleting pod '{pod_name}' in namespace '{namespace}")
         self.client.delete_namespaced_pod(name=pod_name, namespace=namespace)
+        self.client.delete_namespaced_service(
+            name=f"{pod_name}-state-service", namespace=namespace
+        )
 
     def get_pod(self, pod_name, namespace):
         pod = self.client.read_namespaced_pod(name=pod_name, namespace=namespace)
         return pod
 
-    def move_pod(self, pod_name, from_namespace, target_namespace):
+    def move_pod(self, pod_name, from_namespace, target_namespace, service_port):
+        print(
+            f"Moving '{pod_name}' to '{target_namespace}' listening on '{service_port}'"
+        )
         pod = self.get_pod(pod_name, from_namespace)
         self.delete_pod(pod_name, from_namespace)
         self.wait_for_pod_deletion(pod_name, from_namespace)
@@ -139,6 +173,7 @@ class KubeDao:
 
         print(f"Recreating pod '{pod_name}'")
         self.client.create_namespaced_pod(namespace=target_namespace, body=pod_manifest)
+        self.expose_pod_port(pod_name, target_namespace, service_port)
         self.wait_for_pod_ready(pod_name, target_namespace)
 
     def get_ip(self):
