@@ -27,7 +27,7 @@ class MonsterDbDao:
             f"""
         CREATE TABLE IF NOT EXISTS "{TABLE_NAME}"(
             id SERIAL PRIMARY KEY,
-            player_id INT,
+            player_id TEXT,
             name TEXT NOT NULL,
             health INT,
             score INT,
