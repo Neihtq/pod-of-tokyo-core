@@ -23,6 +23,7 @@ class MonsterDbDao:
         self.create_monster()
 
     def create_table(self):
+        print(f"Create table '{TABLE_NAME}")
         self.cursor.execute(
             f"""
         CREATE TABLE IF NOT EXISTS "{TABLE_NAME}"(
@@ -39,6 +40,7 @@ class MonsterDbDao:
         self.connection.commit()
 
     def create_monster(self):
+        print(f"Create monster '{self.monster_name}")
         self.cursor.execute(
             f"""
         SELECT COUNT(*) FROM "{TABLE_NAME}" WHERE player_id = %s
@@ -147,7 +149,7 @@ class MonsterDbDao:
             f"""
         SELECT {attribute} FROM "{TABLE_NAME}" WHERE player_id = %s
         """,
-            (self.player_id),
+            (self.player_id,),
         )
         result = self.cursor.fetchone()
         return result[0] if result else None
