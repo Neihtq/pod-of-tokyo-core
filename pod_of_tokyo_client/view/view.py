@@ -1,16 +1,15 @@
-from textual.app import App, ComposeResult
-from textual.containers import Grid, VerticalScroll
-from textual.widgets import OptionList, Static
-from textual.widgets.option_list import Option
+from textual.app import App
+from textual.containers import Grid
+from textual.widgets import Static
 
 from pod_of_tokyo_client.utils.constants import (
     EVENT_LOGS_BOX_ID,
     GAME_STATE_BOX_ID,
-    MENU_BOX_ID,
-    MENU_CONTENT_HEADER_ID,
     MENU_CONTENT_ID,
     PLAYER_STATS_BOX_ID,
 )
+from pod_of_tokyo_client.view.green_border_vertical import GreenBorderVertical
+from pod_of_tokyo_client.view.join_view import JoinView
 
 
 class PodOfTokyoView(App):
@@ -29,7 +28,8 @@ class PodOfTokyoView(App):
             player_stats = self.compose_box(title="Stats", id=PLAYER_STATS_BOX_ID)
             yield player_stats
 
-            yield from self.compose_menu()
+            join_view = JoinView(self.controller, id=MENU_CONTENT_ID)
+            yield join_view
 
             event_logs = self.compose_box(title="Event Logs", id=EVENT_LOGS_BOX_ID)
             yield event_logs
@@ -44,21 +44,8 @@ class PodOfTokyoView(App):
         static.styles.height = "1fr"
         return static
 
-    def compose_menu(self) -> ComposeResult:
-        menu_options = [
-            Option("Option A", "A"),
-            Option("Option B", "B"),
-            Option("Option C", "C"),
-            Option("Option D", "D"),
-        ]
-        menu_box = VerticalScroll(id=MENU_BOX_ID)
-        menu_box.styles.border = ("solid", "green")
-        menu_box.border_title = "Menu"
-        menu_box.styles.width = "1fr"
-        menu_box.styles.height = "1fr"
-        with menu_box:
-            yield Static("Choose on option", id=MENU_CONTENT_HEADER_ID)
-            yield OptionList(*menu_options, id=MENU_CONTENT_ID)
+    def compose_menu(self, phase: GreenBorderVertical):
+        yield phase
 
     def on_mount(self) -> None:
         menu_list = self.query_one(f"#{MENU_CONTENT_ID}")
