@@ -1,0 +1,6 @@
+PLAYER_STATS_BOX_ID = "player-stats"
+MENU_BOX_ID = "menu"
+MENU_CONTENT_ID = "menu-content"
+MENU_CONTENT_HEADER_ID = "menu-content-header"
+EVENT_LOGS_BOX_ID = "event-logs"
+GAME_STATE_BOX_ID = "game-state"
