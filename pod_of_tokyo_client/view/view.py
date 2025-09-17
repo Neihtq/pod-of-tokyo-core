@@ -11,7 +11,6 @@ from pod_of_tokyo_client.utils.constants import (
 )
 from pod_of_tokyo_client.view.green_border_vertical import GreenBorderVertical
 from pod_of_tokyo_client.view.join_view import JoinView
-from pod_of_tokyo_client.view.lobby_view import LobbyView
 
 
 class PodOfTokyoView(App):

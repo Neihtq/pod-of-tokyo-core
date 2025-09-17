@@ -4,3 +4,4 @@ class Model:
         self.player_stats = {}
         self.event_logs = []
         self.players = []
+        self.dices = []

@@ -3,6 +3,7 @@ from textual.containers import Grid
 from pod_of_tokyo_client.utils.constants import MENU_BOX_ID
 from pod_of_tokyo_client.view.join_view import JoinView
 from pod_of_tokyo_client.view.lobby_view import LobbyView
+from pod_of_tokyo_client.view.start_view import StartView
 from pod_of_tokyo_client.view.view import PodOfTokyoView
 
 
@@ -20,11 +21,12 @@ class Controller:
         pass
 
     def join_lobby(self, address: str):
-        print(f"join lobby at address {address}")
         self.model.players = ["Godzilla", "Kinguin", "Alienoid (you)", "Woogie Boogie"]
 
         lobby_view = LobbyView(model=self.model, controller=self)
         self.view.compose_menu(lobby_view)
 
     def start_game(self):
-        pass
+        self.model.dices = ["1", "2", "FIST", "FIST", "FIST", "FIST"]
+        start_view = StartView(model=self.model, controller=self)
+        self.view.compose_menu(start_view)

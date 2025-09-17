@@ -10,3 +10,4 @@ class GreenBorderVertical(Vertical):
         self.styles.height = "1fr"
         self.model = model
         self.controller = controller
+        self.focus_element = self

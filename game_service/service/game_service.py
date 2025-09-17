@@ -4,9 +4,10 @@ from flask_socketio import join_room
 
 from game_service.middleware.controller_client import ControllerClient
 from game_service.middleware.pod_client import PodClient
-from game_service.model import Commands, DiceSymbols, Location
+from game_service.model import Commands, Location
 from game_service.service.dice_service import roll_dices
 from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
+from pod_of_tokyo_commons.entities.dice_symbols import DiceSymbols
 
 WINNING_CONDITION = 20
 ROOM = "king-of-tokyo"

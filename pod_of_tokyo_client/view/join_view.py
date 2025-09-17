@@ -11,7 +11,9 @@ JOIN_LOBBY_BUTTON_ID = "join-lobby-button"
 class JoinView(GreenBorderVertical):
     def compose(self) -> ComposeResult:
         yield Static("Enter address of Lobby")
-        yield Input(id=ADDRESS_INPUT_ID)
+        adress_input = Input(id=ADDRESS_INPUT_ID)
+        self.focus_element = adress_input
+        yield adress_input
         yield Button("Join Lobby", id=JOIN_LOBBY_BUTTON_ID)
 
     @on(Button.Pressed)
@@ -26,3 +28,6 @@ class JoinView(GreenBorderVertical):
     def join_lobby(self) -> None:
         address_input = self.query_one(f"#{ADDRESS_INPUT_ID}")
         self.controller.join_lobby(address_input.value)
+
+    def on_mount(self) -> None:
+        self.focus_element.focus()

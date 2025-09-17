@@ -12,7 +12,9 @@ class LobbyView(GreenBorderVertical):
         yield Static("Lobby")
 
         players = [ListItem(Label(player)) for player in self.model.players]
-        yield ListView(*players)
+        list_view = ListView(*players)
+        self.focus_element = list_view
+        yield list_view
         yield Button("Start Game", id=START_GAME_BUTTON_ID, disabled=len(players) >= 2)
 
     @on(Button.Pressed)
@@ -22,4 +24,7 @@ class LobbyView(GreenBorderVertical):
 
     def on_key(self, event) -> None:
         if event.key == "enter":
-            self.controller.start_came()
+            self.controller.start_game()
+
+    def on_mount(self) -> None:
+        self.focus_element.focus()
