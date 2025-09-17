@@ -1,15 +1,17 @@
 from textual.app import App
-from textual.containers import Grid
+from textual.containers import Container, Grid
 from textual.widgets import Static
 
 from pod_of_tokyo_client.utils.constants import (
     EVENT_LOGS_BOX_ID,
     GAME_STATE_BOX_ID,
+    MENU_BOX_ID,
     MENU_CONTENT_ID,
     PLAYER_STATS_BOX_ID,
 )
 from pod_of_tokyo_client.view.green_border_vertical import GreenBorderVertical
 from pod_of_tokyo_client.view.join_view import JoinView
+from pod_of_tokyo_client.view.lobby_view import LobbyView
 
 
 class PodOfTokyoView(App):
@@ -28,8 +30,8 @@ class PodOfTokyoView(App):
             player_stats = self.compose_box(title="Stats", id=PLAYER_STATS_BOX_ID)
             yield player_stats
 
-            join_view = JoinView(self.controller, id=MENU_CONTENT_ID)
-            yield join_view
+            join_view = JoinView(self.model, self.controller, id=MENU_CONTENT_ID)
+            yield Container(join_view, id=MENU_BOX_ID)
 
             event_logs = self.compose_box(title="Event Logs", id=EVENT_LOGS_BOX_ID)
             yield event_logs
@@ -44,8 +46,10 @@ class PodOfTokyoView(App):
         static.styles.height = "1fr"
         return static
 
-    def compose_menu(self, phase: GreenBorderVertical):
-        yield phase
+    def compose_menu(self, content: GreenBorderVertical):
+        menu_container = self.query_one(f"#{MENU_BOX_ID}")
+        menu_container.remove_children()
+        menu_container.mount(content)
 
     def on_mount(self) -> None:
         menu_list = self.query_one(f"#{MENU_CONTENT_ID}")

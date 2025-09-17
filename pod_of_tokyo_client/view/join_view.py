@@ -1,3 +1,4 @@
+from textual import on
 from textual.app import ComposeResult
 from textual.widgets import Button, Input, Static
 
@@ -13,7 +14,15 @@ class JoinView(GreenBorderVertical):
         yield Input(id=ADDRESS_INPUT_ID)
         yield Button("Join Lobby", id=JOIN_LOBBY_BUTTON_ID)
 
+    @on(Button.Pressed)
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == JOIN_LOBBY_BUTTON_ID:
-            address_input = self.query_one(f"#{ADDRESS_INPUT_ID}")
-            self.controller.join_lobby(address_input.value)
+            self.join_lobby()
+
+    @on(Input.Submitted)
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.join_lobby()
+
+    def join_lobby(self) -> None:
+        address_input = self.query_one(f"#{ADDRESS_INPUT_ID}")
+        self.controller.join_lobby(address_input.value)

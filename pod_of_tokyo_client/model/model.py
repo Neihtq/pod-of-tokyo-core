@@ -1,3 +1,6 @@
 class Model:
     def __init__(self):
-        print("hallo")
+        self.game_state = {}
+        self.player_stats = {}
+        self.event_logs = []
+        self.players = []
