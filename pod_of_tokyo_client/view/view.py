@@ -45,7 +45,8 @@ class PodOfTokyoView(App):
         static.styles.height = "1fr"
         return static
 
-    def compose_menu(self, content: GreenBorderVertical):
+    def compose_menu(self, view_class):
+        content = view_class(model=self.model, controller=self.controller)
         menu_container = self.query_one(f"#{MENU_BOX_ID}")
         menu_container.remove_children()
         menu_container.mount(content)

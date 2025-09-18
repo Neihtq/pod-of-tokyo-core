@@ -3,6 +3,7 @@ from pod_of_tokyo_client.view.phase_1 import Phase1
 from pod_of_tokyo_client.view.phase_2 import Phase2
 from pod_of_tokyo_client.view.start_view import StartView
 from pod_of_tokyo_client.view.view import PodOfTokyoView
+from pod_of_tokyo_client.view.yield_view import YieldView
 
 
 class Controller:
@@ -18,22 +19,27 @@ class Controller:
     def update_model(self):
         pass
 
+    def get_view(self, view_class):
+        return view_class(model=self.model, controller=self)
+
     def join_lobby(self, address: str):
         self.model.players = ["Godzilla", "Kinguin", "Alienoid (you)", "Woogie Boogie"]
-
-        lobby_view = LobbyView(model=self.model, controller=self)
-        self.view.compose_menu(lobby_view)
+        self.view.compose_menu(LobbyView)
 
     def start_game(self):
         self.model.dices = ["1", "2", "FIST", "FIST", "FIST", "FIST"]
-        start_view = StartView(model=self.model, controller=self)
-        self.view.compose_menu(start_view)
+        self.view.compose_menu(StartView)
 
     def init_phase_1(self):
-        phase_1_view = Phase1(model=self.model, controller=self)
-        self.view.compose_menu(phase_1_view)
+        self.view.compose_menu(Phase1)
 
     def throw_dices(self):
-        self.model.dices = ["1", "2", "THUNDER", "THUNDER", "HEART"]
-        phase_2_view = Phase2(model=self.model, controller=self)
-        self.view.compose_menu(phase_2_view)
+        self.model.dices = ["1", "2", "THUNDER", "THUNDER", "HEART", "FIST"]
+        self.view.compose_menu(Phase2)
+
+    def resolve_dices(self):
+        self.model.dices = ["1", "2", "THUNDER", "THUNDER", "HEART", "FIST"]
+        self.view.compose_menu(YieldView)
+
+    def is_yielding(self, will_yield):
+        self.init_phase_1()
