@@ -1,3 +1,5 @@
+import time
+
 from textual.app import ComposeResult
 from textual.widgets import Static
 
@@ -16,3 +18,11 @@ class StartView(GreenBorderVertical):
                 counter += 1
 
         return counter
+
+    def on_mount(self) -> None:
+        time.sleep(3)
+        self.controller.init_phase_1()
+
+    def on_key(self, event) -> None:
+        if event.key == "enter":
+            self.controller.init_phase_1()

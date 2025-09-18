@@ -3,6 +3,7 @@ from textual.containers import Grid
 from pod_of_tokyo_client.utils.constants import MENU_BOX_ID
 from pod_of_tokyo_client.view.join_view import JoinView
 from pod_of_tokyo_client.view.lobby_view import LobbyView
+from pod_of_tokyo_client.view.phase_1 import Phase1
 from pod_of_tokyo_client.view.start_view import StartView
 from pod_of_tokyo_client.view.view import PodOfTokyoView
 
@@ -30,3 +31,10 @@ class Controller:
         self.model.dices = ["1", "2", "FIST", "FIST", "FIST", "FIST"]
         start_view = StartView(model=self.model, controller=self)
         self.view.compose_menu(start_view)
+
+    def init_phase_1(self):
+        phase_1_view = Phase1(model=self.model, controller=self)
+        self.view.compose_menu(phase_1_view)
+
+    def throw_dices(self):
+        pass
