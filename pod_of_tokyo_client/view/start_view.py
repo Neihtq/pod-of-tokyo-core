@@ -20,7 +20,6 @@ class StartView(GreenBorderVertical):
         return counter
 
     def on_mount(self) -> None:
-        time.sleep(3)
         self.controller.init_phase_1()
 
     def on_key(self, event) -> None:
