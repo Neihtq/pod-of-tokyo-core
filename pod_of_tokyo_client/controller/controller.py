@@ -43,6 +43,7 @@ class Controller:
     def resolve_dices(self, dices):
         self.model.dices = ["1", "2", "THUNDER", "THUNDER", "HEART", "FIST"]
         self.model.add_event(f"Dices were chosen {dices}!")
+        self.model.update_player_stats(health=1, score=5)
         self.view.compose_menu(YieldView)
 
     def is_yielding(self, will_yield):

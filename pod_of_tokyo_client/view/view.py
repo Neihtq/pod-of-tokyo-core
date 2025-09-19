@@ -1,5 +1,5 @@
 from textual.app import App
-from textual.containers import Container, Grid, VerticalScroll
+from textual.containers import Container, Grid, Vertical, VerticalScroll
 from textual.widgets import Static
 
 from pod_of_tokyo_client.utils.constants import (
@@ -25,8 +25,12 @@ class PodOfTokyoView(App):
         grid.styles.grid_size_columns = 2
 
         with grid:
-            player_stats = self.compose_box(title="Stats", id=PLAYER_STATS_BOX_ID)
-            yield player_stats
+            player_stats_container = Container(Static("Stats"), id=PLAYER_STATS_BOX_ID)
+            player_stats_container.border_title = "Stats"
+            player_stats_container.styles.border = ("solid", "green")
+            player_stats_container.styles.width = "1fr"
+            player_stats_container.styles.height = "1fr"
+            yield player_stats_container
 
             join_view = JoinView(self.model, self.controller, id=MENU_CONTENT_ID)
             yield Container(join_view, id=MENU_BOX_ID)
@@ -38,8 +42,8 @@ class PodOfTokyoView(App):
             event_logs.styles.height = "1fr"
             yield event_logs
 
-            ai_chat = self.compose_box(title="Game State", id=GAME_STATE_BOX_ID)
-            yield ai_chat
+            game_state = self.compose_box(title="Game State")
+            yield Container(game_state, id=GAME_STATE_BOX_ID)
 
     def add_event(self, event):
         event_container = self.query_one(f"#{EVENT_LOGS_BOX_ID}", VerticalScroll)
@@ -48,8 +52,17 @@ class PodOfTokyoView(App):
         event_container.mount(new_message_static)
         event_container.scroll_end(animate=False)
 
-    def compose_box(self, title, id):
-        static = Static(id=id)
+    def compose_player_stats(self):
+        player_stats_container = self.query_one(f"#{PLAYER_STATS_BOX_ID}")
+        player_stats_container.remove_children()
+        statics = [
+            Static(f"{stat}:\t{value}")
+            for stat, value in self.model.player_stats.items()
+        ]
+        player_stats_container.mount(Vertical(*statics))
+
+    def compose_box(self, title):
+        static = Static()
         static.border_title = title
         static.styles.border = ("solid", "green")
         static.styles.width = "1fr"
@@ -63,6 +76,7 @@ class PodOfTokyoView(App):
         menu_container.mount(content)
 
     def on_mount(self) -> None:
+        self.compose_player_stats()
         menu_list = self.query_one(f"#{MENU_CONTENT_ID}")
         menu_list.focus()
 
