@@ -24,10 +24,12 @@ class Controller:
 
     def join_lobby(self, address: str):
         self.model.players = ["Godzilla", "Kinguin", "Alienoid (you)", "Woogie Boogie"]
+        self.model.add_event("You joined the lobby")
         self.view.compose_menu(LobbyView)
 
     def start_game(self):
         self.model.dices = ["1", "2", "FIST", "FIST", "FIST", "FIST"]
+        self.model.add_event("You started!")
         self.view.compose_menu(StartView)
 
     def init_phase_1(self):
@@ -35,11 +37,14 @@ class Controller:
 
     def throw_dices(self):
         self.model.dices = ["1", "2", "THUNDER", "THUNDER", "HEART", "FIST"]
+        self.model.add_event("You threw dices!")
         self.view.compose_menu(Phase2)
 
-    def resolve_dices(self):
+    def resolve_dices(self, dices):
         self.model.dices = ["1", "2", "THUNDER", "THUNDER", "HEART", "FIST"]
+        self.model.add_event(f"Dices were chosen {dices}!")
         self.view.compose_menu(YieldView)
 
     def is_yielding(self, will_yield):
+        self.model.add_event(f"Did you yield?! {will_yield}")
         self.init_phase_1()

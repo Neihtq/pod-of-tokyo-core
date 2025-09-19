@@ -21,5 +21,4 @@ class YieldView(GreenBorderVertical):
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         selected_value = event.option.prompt
-        print(selected_value)
-        self.controller.is_yielding(selected_value == "yes")
+        self.controller.is_yielding(selected_value == "Yes")

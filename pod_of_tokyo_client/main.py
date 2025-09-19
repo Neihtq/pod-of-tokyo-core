@@ -7,4 +7,5 @@ if __name__ == "__main__":
     controller = Controller(model=model)
     app = PodOfTokyoView(model=model, controller=controller)
     controller.set_view(view=app)
+    model.set_view(view=app)
     app.run()
