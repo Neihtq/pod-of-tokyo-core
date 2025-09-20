@@ -5,6 +5,7 @@ entities/game_state.py
 entities/player.py
 model/__init__.py
 model/message_type.py
+model/update_event.py
 pod_of_tokyo_commons.egg-info/PKG-INFO
 pod_of_tokyo_commons.egg-info/SOURCES.txt
 pod_of_tokyo_commons.egg-info/dependency_links.txt
