@@ -1,8 +1,9 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from pod_of_tokyo_commons.entities import DiceSymbols
+
 from game_service.model import Location
-from game_service.model.dice_symbols import DiceSymbols
 from game_service.service.game_service import GameService
 
 
@@ -80,6 +81,14 @@ class TestGameService(unittest.TestCase):
     def test_check_winner(self):
         pod = MagicMock()
         pod.player_id = "player1"
+        pod.get_state.return_value = (10, 0, 0, "node1")
+
+        pod3 = MagicMock()
+        pod3.player_id = "player3"
+        pod3.name = "Monster3"
+        pod3.get_state.return_value = (10, 0, 0, "node3")
+        self.game_service.players = {"player1": pod, "player3": pod3}
+
         self.game_service.dead = {"player2"}
         self.game_service.player_order = ["player1", "player2", "player3"]
 
@@ -141,9 +150,10 @@ class TestGameService(unittest.TestCase):
         "game_service.service.game_service.GameService.is_in_tokyo", return_value=False
     )
     def test_slap(self, mock_is_in_tokyo):
-        active_pod = MagicMock()
-        active_pod.player_id = "player1"
-        active_pod.name = "Monster1"
+        pod1 = MagicMock()
+        pod1.player_id = "player1"
+        pod1.name = "Monster1"
+        pod1.get_state.return_value = (10, 0, 0, "node1")
 
         pod2 = MagicMock()
         pod2.player_id = "player2"
@@ -156,14 +166,14 @@ class TestGameService(unittest.TestCase):
         pod3.get_state.return_value = (10, 0, 0, "node3")
 
         self.game_service.players = {
-            "player1": active_pod,
+            "player1": pod1,
             "player2": pod2,
             "player3": pod3,
         }
         self.game_service.player_order = ["player1", "player2", "player3"]
         self.game_service.dead = set()
 
-        self.game_service.slap(active_pod, "node1", 2)
+        self.game_service.slap(pod1, "node1", 2)
 
         pod2.slap.assert_called_once_with(2)
         pod3.slap.assert_called_once_with(2)

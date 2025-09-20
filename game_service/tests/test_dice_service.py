@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
-from game_service.model.dice_symbols import DiceSymbols
+from pod_of_tokyo_commons.entities import DiceSymbols
+
 from game_service.service.dice_service import SYMBOLS, roll_dices
 
 

@@ -1,13 +1,14 @@
-from collections import Counter
+from collections import Counter, defaultdict
 
 from flask_socketio import join_room
+from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
+from pod_of_tokyo_commons.entities import DiceSymbols, GameState, Player
+from pod_of_tokyo_commons.model import MessageType
 
 from game_service.middleware.controller_client import ControllerClient
 from game_service.middleware.pod_client import PodClient
-from game_service.model import Commands, Location
+from game_service.model import Location
 from game_service.service.dice_service import roll_dices
-from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
-from pod_of_tokyo_commons.entities.dice_symbols import DiceSymbols
 
 WINNING_CONDITION = 20
 ROOM = "king-of-tokyo"
@@ -23,6 +24,18 @@ class GameService:
         self.controller = ControllerClient(base_url=controller_url)
         self.winner = None
         self.num_players_alive = 0
+
+    def get_game_state(self):
+        game_state = defaultdict(list)
+        for p_id in self.player_order:
+            if p_id in self.dead:
+                continue
+            pod = self.players[p_id]
+            health, score, energy, location = pod.get_state()
+            game_state[location].append(
+                Player(health=health, score=score, energy=energy, location=location)
+            )
+        return GameState(game_state)
 
     def add(self, sid):
         self.connection_ids.add(sid)
@@ -61,10 +74,7 @@ class GameService:
                 continue
 
             name = self.players[player_id].name
-            self.notify_all(
-                Commands.MESSAGE,
-                {"message": f"It's {name}'s turn."},
-            )
+            self.notify_all(f"It's {name}'s turn.")
             self.start_turn(player_id)
             idx = (idx + 1) % len(self.player_order)
 
@@ -80,10 +90,7 @@ class GameService:
         elif self.is_in_tokyo(location):
             pod.update_score(2)
             score += 2
-            self.notify_all(
-                Commands.MESSAGE,
-                {"message": f"{pod.name} received 2 stars!"},
-            )
+            self.notify_all(f"{pod.name} received 2 stars!")
 
         if self.check_winner(pod, score):
             return
@@ -108,28 +115,18 @@ class GameService:
             self.controller.relocate(
                 pod.player_id, Location.OUTSIDE.value, Location.CITY.value
             )
-            self.notify_all(
-                Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo City!"}
-            )
+            self.notify_all(f"{pod.name} has conquered Tokyo City!")
             pod.update_score(1)
             score += 1
-            self.notify_all(
-                Commands.MESSAGE,
-                {"message": f"{pod.name} received 1 star!"},
-            )
+            self.notify_all(f"{pod.name} received 1 star!")
         elif self.num_players_alive > 4 and node_state[TOKYO_BAY_KEY] is None:
             self.controller.relocate(
                 pod.player_id, Location.OUTSIDE.value, Location.BAY.value
             )
-            self.notify_all(
-                Commands.MESSAGE, {"message": f"{pod.name} has conquered Tokyo Bay!"}
-            )
+            self.notify_all(f"{pod.name} has conquered Tokyo Bay!")
             pod.update_score(1)
             score += 1
-            self.notify_all(
-                Commands.MESSAGE,
-                {"message": f"{pod.name} received 1 star!"},
-            )
+            self.notify_all(f"{pod.name} received 1 star!")
 
         return score
 
@@ -140,10 +137,7 @@ class GameService:
         )
         if is_winner:
             self.winner = pod.name
-            self.notify_all(
-                Commands.MESSAGE,
-                {"message": f"{pod.name} is the King of Tokyo!"},
-            )
+            self.notify_all(f"{pod.name} is the King of Tokyo!")
 
         return is_winner
 
@@ -154,18 +148,14 @@ class GameService:
         max_num_throws = 3
         while throw_count < max_num_throws and num_throws > 0:
             dices = roll_dices(num_throws)
-            self.notify_all(
-                Commands.MESSAGE, {"message": f"{pod.name} threw the dices! {dices}"}
-            )
+            self.notify_all(f"{pod.name} threw the dices! {dices}")
 
             response = self.call_and_wait(
-                Commands.ROLL_AND_RESOLVE, pod.player_id, {"dices": dices}
+                MessageType.ROLL_AND_RESOLVE, pod.player_id, {"dices": dices}
             )
             chosen_dices = response["dicesToKeep"]
             dices_to_keep.extend(chosen_dices)
-            self.notify_all(
-                Commands.MESSAGE, {"message": f"{pod.name} kept {dices_to_keep}"}
-            )
+            self.notify_all(f"{pod.name} kept {dices_to_keep}")
             num_throws = num_throws - len(chosen_dices)
             throw_count += 1
 
@@ -177,10 +167,7 @@ class GameService:
             amount = counter[key]
             if key == DiceSymbols.HEART.value:
                 pod.heal(life=amount)
-                self.notify_all(
-                    Commands.MESSAGE,
-                    {"message": f"{pod.name} healed {amount} life points."},
-                )
+                self.notify_all(f"{pod.name} healed {amount} life points.")
             if key == DiceSymbols.FIST.value:
                 self.slap(pod, location, damage=amount)
 
@@ -193,15 +180,12 @@ class GameService:
         for num in [DiceSymbols.ONE, DiceSymbols.TWO, DiceSymbols.THREE]:
             if num.value in counter:
                 num_counter += counter[num.value]
-                score += int(num.value) * counter[num.value] # type:ignore
+                score += int(num.value) * counter[num.value]  # type:ignore
         if num_counter >= score_threshold:
             pod.update_score(score=score)
             msg_suffix = "star" if score == 1 else "stars"
             message = f"{pod.name} received {score} {msg_suffix}!"
-            self.notify_all(
-                Commands.MESSAGE,
-                {"message": message},
-            )
+            self.notify_all(message)
 
     def slap(self, active_pod, location, damage):
         for p_id in self.player_order:
@@ -215,54 +199,41 @@ class GameService:
 
             pod.slap(damage)
             self.notify_all(
-                Commands.MESSAGE,
-                {
-                    "message": f"{active_pod.name} slapped {pod.name}! {pod.name} lost {damage} life points."
-                },
+                f"{active_pod.name} slapped {pod.name}! {pod.name} lost {damage} life points."
             )
             health -= damage
             if health <= 0:
                 self.dead.add(p_id)
                 self.num_players_alive -= 1
                 self.controller.destroy_pod(p_id, p_location)
-                self.notify_all(Commands.MESSAGE, {"message": f"{pod.name} died!"})
+                self.notify_all(f"{pod.name} died!")
 
                 if self.num_players_alive <= 4:
                     player_at_bay = self.controller.destroy_tokyo_bay()["playerId"]
-                    self.notify_all(
-                        Commands.MESSAGE, {"message": f"Tokyo Bay has been flooded!"}
-                    )
+                    self.notify_all(f"Tokyo Bay has been flooded!")
                     if player_at_bay:
                         pod_at_bay = self.players[player_at_bay]
-                        self.notify_all(
-                            Commands.MESSAGE,
-                            {"message": f"{pod_at_bay.name} left Tokyo!"},
-                        )
+                        self.notify_all(f"{pod_at_bay.name} left Tokyo!")
             elif self.is_in_tokyo(p_location):
-                response = self.call_and_wait(Commands.YIELD, p_id)
+                response = self.call_and_wait(MessageType.YIELD, p_id)
                 if response["yield"]:
                     self.controller.relocate(p_id, p_location, Location.OUTSIDE.value)
-                    self.notify_all(
-                        Commands.MESSAGE,
-                        {"message": f"{pod.name} left Tokyo!"},
-                    )
+                    self.notify_all(f"{pod.name} left Tokyo!")
 
     def call_and_wait(self, command, player_id, payload={}):
         return self.socketio.call(command, payload, to=player_id, timeout=180)
 
-    def notify_all(self, event, payload):
-        print(payload["message"])
-        self.socketio.emit(event, payload, to=ROOM)
+    def notify_all(self, message):
+        game_state = self.get_game_state().to_dict()
+        payload = {"message": message, "gameState": game_state}
+        self.socketio.emit(MessageType.EVENT, payload, to=ROOM)
 
     def decide_starter(self):
         players = self.player_order.copy()
         winners = []
         max_score = 0
         while len(winners) != 1:
-            self.notify_all(
-                Commands.MESSAGE,
-                {"message": "Determining who starts..."},
-            )
+            self.notify_all("Determining who starts...")
             for player_id in players:
                 dices = roll_dices(6)
                 num_fists = Counter(dices)[DiceSymbols.FIST.value]

@@ -1,6 +1,6 @@
 import random
 
-from game_service.model import DiceSymbols
+from pod_of_tokyo_commons.entities import DiceSymbols
 
 SYMBOLS = [
     DiceSymbols.ONE,
