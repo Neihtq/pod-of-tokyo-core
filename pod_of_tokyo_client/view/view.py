@@ -76,6 +76,7 @@ class PodOfTokyoView(App):
         menu_container.mount(content)
 
     def on_mount(self) -> None:
+        self.run_worker(self.controller.poll_for_socket_calls())
         self.compose_player_stats()
         menu_list = self.query_one(f"#{MENU_CONTENT_ID}")
         menu_list.focus()

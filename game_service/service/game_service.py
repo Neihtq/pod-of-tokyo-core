@@ -1,3 +1,4 @@
+import time
 from collections import Counter, defaultdict
 
 from flask_socketio import join_room
@@ -270,6 +271,7 @@ class GameService:
                     winners = [player_id]
                 elif num_fists == max_score:
                     winners.append(player_id)
+                time.sleep(1)
 
             players = winners.copy()
             winners = []
