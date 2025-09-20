@@ -26,7 +26,7 @@ class JoinView(GreenBorderVertical):
         self.join_lobby()
 
     def join_lobby(self) -> None:
-        address_input = self.query_one(f"#{ADDRESS_INPUT_ID}")
+        address_input = self.query_one(f"#{ADDRESS_INPUT_ID}", Input)
         self.controller.join_lobby(address_input.value)
 
     def on_mount(self) -> None:
