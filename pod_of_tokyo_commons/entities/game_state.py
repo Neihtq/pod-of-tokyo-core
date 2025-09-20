@@ -5,4 +5,11 @@ class GameState:
     def __init__(self, game_state):
         self.players_in_city = game_state[TOKYO_CITY_KEY]
         self.players_in_bay = game_state[TOKYO_BAY_KEY]
-        self.players_in_outside = game_state[OUTSIDE_KEY]
+        self.players_outside = game_state[OUTSIDE_KEY]
+
+    def to_dict(self):
+        return {
+            TOKYO_CITY_KEY: [player.to_dict() for player in self.players_in_city],
+            TOKYO_BAY_KEY: [player.to_dict() for player in self.players_in_bay],
+            OUTSIDE_KEY: [player.to_dict() for player in self.players_outside],
+        }
