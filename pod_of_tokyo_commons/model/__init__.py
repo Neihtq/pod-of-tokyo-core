@@ -1,0 +1,1 @@
+from pod_of_tokyo_commons.model.message_type import MessageType
