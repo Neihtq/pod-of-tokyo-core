@@ -13,8 +13,8 @@ class Controller:
     def set_view(self, view: PodOfTokyoView):
         self.view = view
 
-    def handle_input(self, user_input):
-        pass
+    def set_url(self, url):
+        self.url = url
 
     def update_model(self):
         pass
@@ -23,6 +23,7 @@ class Controller:
         return view_class(model=self.model, controller=self)
 
     def join_lobby(self, address: str):
+        self.set_url(address)
         self.model.players = ["Godzilla", "Kinguin", "Alienoid (you)", "Woogie Boogie"]
         self.model.add_event("You joined the lobby")
         self.view.compose_menu(LobbyView)

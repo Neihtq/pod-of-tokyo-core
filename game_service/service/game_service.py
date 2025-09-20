@@ -42,7 +42,7 @@ class GameService:
             self.players[p["playerId"]] = PodClient(
                 base_url=p["podUrl"], name=p["name"], player_id=p["playerId"]
             )
-            self.player_order.append(p[0])
+            self.player_order.append(p["playerId"])
 
         self.num_players_alive = len(self.player_order)
         self.locations = {
@@ -192,8 +192,8 @@ class GameService:
         score_threshold = 3
         for num in [DiceSymbols.ONE, DiceSymbols.TWO, DiceSymbols.THREE]:
             if num.value in counter:
-                num_counter += 1
-                score += int(num.value)  # type:ignore
+                num_counter += counter[num.value]
+                score += int(num.value) * counter[num.value] # type:ignore
         if num_counter >= score_threshold:
             pod.update_score(score=score)
             msg_suffix = "star" if score == 1 else "stars"
