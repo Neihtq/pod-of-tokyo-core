@@ -7,3 +7,4 @@ class MessageType(Enum):
     YIELD = auto()
     EVENT = auto()
     UPDATE = auto()
+    DEATH = auto()
