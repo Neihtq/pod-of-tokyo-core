@@ -1,4 +1,8 @@
 setup.py
+entities/__init__.py
+entities/dice_symbols.py
+entities/game_state.py
+entities/player.py
 pod_of_tokyo_commons.egg-info/PKG-INFO
 pod_of_tokyo_commons.egg-info/SOURCES.txt
 pod_of_tokyo_commons.egg-info/dependency_links.txt
