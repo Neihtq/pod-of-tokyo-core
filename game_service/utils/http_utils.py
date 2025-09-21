@@ -2,7 +2,7 @@ import requests
 
 
 def join(base_url, endpoint):
-    return f"{base_url}/{endpoint}"
+    return f"{base_url.rstrip('/')}/{endpoint}"
 
 
 def get(url, resource_id):
