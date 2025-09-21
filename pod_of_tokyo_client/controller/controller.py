@@ -1,5 +1,4 @@
 import asyncio
-import threading
 
 from pod_of_tokyo_client.middleware.game_client import GameClient
 from pod_of_tokyo_client.middleware.message import Message
@@ -23,25 +22,20 @@ class Controller:
     def set_view(self, view: PodOfTokyoView):
         self.view = view
 
-    def _connect(self, url):
-        asyncio.set_event_loop(asyncio.new_event_loop())
-        self.client = GameClient(server_url=url)
-        self.client.set_message_handler(self.handle_message)
-        asyncio.get_event_loop().run_until_complete(self.client.connect())
-        asyncio.get_event_loop().close()
-
     def get_name_handler(self, name):
         self.model.player_name = name
         self.view.compose_menu(LobbyView)
 
-    def connect(self, url):
-        self.sio_thread = threading.Thread(
-            target=self._connect, args=(url,), daemon=True
-        )
-        self.sio_thread.start()
+    async def connect(self, url):
+        print("Creating game client!")
+        self.client = GameClient(server_url=url)
+        self.client.set_message_handler(self.handle_message)
+        self.client.set_get_name_handler(self.get_name_handler)
+        await self.client.connect()
 
-    def join_lobby(self, address: str):
-        self.connect(address)
+    async def join_lobby(self, address: str):
+        print("calling Controller.join_lobby")
+        await self.connect(address)
 
     def update_lobby(self, players) -> None:
         self.model.players = players

@@ -41,6 +41,7 @@ class GameServer:
             self.connections[sid] = self.monster_names.pop()
             join_room(ROOM, sid=sid)
             print(f"[+] Added player {sid}")
+            self.notify_all()
 
         @self.socketio.on("disconnect")
         def on_disconnect():

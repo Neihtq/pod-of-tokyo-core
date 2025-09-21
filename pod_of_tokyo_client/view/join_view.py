@@ -17,17 +17,19 @@ class JoinView(GreenBorderVertical):
         yield Button("Join Lobby", id=JOIN_LOBBY_BUTTON_ID)
 
     @on(Button.Pressed)
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == JOIN_LOBBY_BUTTON_ID:
-            self.join_lobby()
+            await self.join_lobby()
 
     @on(Input.Submitted)
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        self.join_lobby()
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        print("User submitted!")
+        await self.join_lobby()
 
-    def join_lobby(self) -> None:
+    async def join_lobby(self) -> None:
         address_input = self.query_one(f"#{ADDRESS_INPUT_ID}", Input)
-        self.controller.join_lobby(address_input.value)
+        print(f"User submitted URL: {address_input.value}")
+        await self.controller.join_lobby(address_input.value)
 
     def on_mount(self) -> None:
         self.focus_element.focus()
