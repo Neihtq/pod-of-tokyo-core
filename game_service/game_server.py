@@ -22,6 +22,8 @@ class GameServer:
         self.app.config["SECRET_KEY"] = "secret"
 
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
+
+        self.connection_ids = set()
         self.game_service = GameService(self.socketio, f"{host}:{controller_port}")
 
         self._register_events()
@@ -31,14 +33,16 @@ class GameServer:
         @self.socketio.on("connect")
         def on_connect():
             sid = socket_request.sid
+            self.connection_ids.add(sid)
             self.game_service.add(sid)
 
         @self.socketio.on("disconnect")
         def on_disconnect():
             sid = socket_request.sid
+            self.connection_ids.remove(sid)
             self.game_service.remove(sid)
 
-        @self.socketio.on("start game")
+        @self.socketio.on("start_game")
         def handle_start_game(json):
             print("Starting game")
             self.socketio.start_background_task(self.game_service.game_loop)

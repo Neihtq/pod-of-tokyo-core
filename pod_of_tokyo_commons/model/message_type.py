@@ -8,3 +8,4 @@ class MessageType(Enum):
     EVENT = auto()
     UPDATE = auto()
     DEATH = auto()
+    LOBBY = auto()
