@@ -51,10 +51,13 @@ class GameService:
         )
         players = game_data["players"]
         for p in players:
-            self.players[p["playerId"]] = PodClient(
+            player_id = p["playerId"]
+            self.players[player_id] = PodClient(
                 base_url=p["podUrl"], name=p["name"], player_id=p["playerId"]
             )
-            self.player_order.append(p["playerId"])
+            self.player_order.append(player_id)
+            update = UpdateEvent(location=Location.OUTSIDE.value)
+            self.send_player_update(player_update=update, player_id=player_id)
 
         self.num_players_alive = len(self.player_order)
         self.locations = {
@@ -62,6 +65,7 @@ class GameService:
             game_data["locations"][TOKYO_BAY_KEY]: Location.BAY,
             game_data["locations"][OUTSIDE_KEY]: Location.OUTSIDE,
         }
+        self.notify_all("Game started!")
 
     def game_loop(self):
         self.start_game()

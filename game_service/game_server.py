@@ -57,6 +57,7 @@ class GameServer:
         @self.socketio.on("start_game")
         def handle_start_game(json):
             print("Starting game")
+            self.game_service.players = self.connections.copy()
             self.socketio.start_background_task(self.game_service.game_loop)
 
     def notify_all(self):
