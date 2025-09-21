@@ -1,0 +1,1 @@
+ROOM = "king-of-tokyo"

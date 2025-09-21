@@ -1,7 +1,9 @@
+import random
 from typing import Protocol, cast
 
 from flask import Flask, request
 from flask_socketio import SocketIO, emit, join_room
+from pod_of_tokyo_commons.constants import MONSTER_NAMES
 from pod_of_tokyo_commons.model import MessageType
 
 from game_service.service.game_service import GameService
@@ -17,6 +19,8 @@ socket_request = cast(SocketRequest, request)
 
 class GameServer:
     def __init__(self, host="0.0.0.0", port=10000, controller_port=11000):
+        self.monster_names = list(MONSTER_NAMES)
+        random.shuffle(self.monster_names)
         self.host = host
         self.port = port
 
@@ -25,7 +29,7 @@ class GameServer:
 
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
 
-        self.connection_ids = set()
+        self.connections = {}
         self.game_service = GameService(self.socketio, f"{host}:{controller_port}")
 
         self._register_events()
@@ -34,15 +38,21 @@ class GameServer:
         @self.socketio.on("connect")
         def on_connect():
             sid = socket_request.sid
-            self.connection_ids.add(sid)
+            self.connections[sid] = self.monster_names.pop()
             join_room(ROOM, sid=sid)
-            self.game_service.add(sid)
+            print(f"[+] Added player {sid}")
 
         @self.socketio.on("disconnect")
         def on_disconnect():
             sid = socket_request.sid
-            self.connection_ids.remove(sid)
+            del self.connections[sid]
             self.game_service.remove(sid)
+            print(f"[-] Removed player {sid}")
+
+        @self.socketio.on("get_name")
+        def handle_get_name():
+            sid = socket_request.sid
+            return {"playerName": self.connections[sid]}
 
         @self.socketio.on("start_game")
         def handle_start_game(json):
@@ -51,7 +61,9 @@ class GameServer:
 
     def notify_all(self):
         self.socketio.emit(
-            MessageType.LOBBY, {"members": list(self.connection_ids)}, to=ROOM
+            MessageType.LOBBY.value,
+            {"members": list(self.connections.values())},
+            to=ROOM,
         )
 
     def run(self):

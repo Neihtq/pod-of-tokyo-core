@@ -22,7 +22,6 @@ class GameService:
         self.players = {}
         self.player_order = []
         self.dead = set()
-        self.connection_ids = set()
         self.controller = ControllerClient(base_url=controller_url)
         self.winner = None
         self.num_players_alive = 0
@@ -38,12 +37,6 @@ class GameService:
                 Player(health=health, score=score, energy=energy, location=location)
             )
         return GameState(game_state)
-
-    def add(self, sid):
-        self.connection_ids.add(sid)
-        join_room(ROOM, sid=sid)
-        self.players[sid] = None
-        print(f"[+] Added player {sid}")
 
     def remove(self, sid):
         if sid in self.players:
@@ -247,15 +240,15 @@ class GameService:
 
     def send_player_update(self, player_update, player_id):
         payload = {"update": player_update.to_dict()}
-        self.socketio.emit(MessageType.UPDATE, payload, to=player_id)
+        self.socketio.emit(MessageType.UPDATE.value, payload, to=player_id)
 
     def notify_player_death(self, player_id):
-        self.socketio.emit(MessageType.DEATH, {}, to=player_id)
+        self.socketio.emit(MessageType.DEATH.value, {}, to=player_id)
 
     def notify_all(self, message):
         game_state = self.get_game_state().to_dict()
         payload = {"message": message, "gameState": game_state}
-        self.socketio.emit(MessageType.EVENT, payload, to=ROOM)
+        self.socketio.emit(MessageType.EVENT.value, payload, to=ROOM)
 
     def decide_starter(self):
         players = self.player_order.copy()
