@@ -1,5 +1,6 @@
 class Model:
     def __init__(self):
+        self.player_name = ""
         self.game_state = {}
         self.player_stats = {"Health": 0, "Score": 0, "Energy": 0, "Location": ""}
         self.events = []

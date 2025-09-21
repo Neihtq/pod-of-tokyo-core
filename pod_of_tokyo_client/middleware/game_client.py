@@ -12,6 +12,9 @@ class GameClient:
     def set_message_handler(self, handler):
         self._message_handler = handler
 
+    def set_get_name_handler(self, handler):
+        self._get_name_handler = handler
+
     def _register_events(self):
         @self.sio.event
         async def connect():
@@ -27,4 +30,6 @@ class GameClient:
 
     async def connect(self):
         await self.sio.connect(self.server_url)
+        response = await self.sio.call("get_name")
+        self._get_name_handler(response["playerName"])
         await self.sio.wait()
