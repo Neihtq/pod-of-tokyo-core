@@ -1,12 +1,9 @@
-import random
-
 from flask import Flask, jsonify, request
 
 from controller_service.kube.kube_dao import KubeDao
 from controller_service.middleware import pod_client
 from pod_of_tokyo_commons.constants import (
     LOCATION_NAMES,
-    MONSTER_NAMES,
     OUTSIDE_KEY,
     TOKYO_BAY_KEY,
     TOKYO_CITY_KEY,
@@ -34,16 +31,17 @@ class ControllerServer:
         @self.app.route("/initGame", methods=["POST"])
         def init_game():
             data = request.get_json()
-            player_ids = data.get("playerIds")
+            players = data.get("players")
 
             self.kube_dao.create_namespaces(LOCATION_NAMES)
             namespaces = self.kube_dao.list_all_namespaces()
 
-            monster_names = random.sample(MONSTER_NAMES, len(player_ids))
             players = []
-            for i in range(len(player_ids)):
-                player_id = player_ids[i]
-                pod_name = monster_names[i]
+            for i in range(len(players)):
+                for k in players[i]:
+                    player_id = k
+                    pod_name = players[i][k]
+
                 port = self.kube_dao.create_pod(
                     pod_name=pod_name,
                     namespace=OUTSIDE_KEY,

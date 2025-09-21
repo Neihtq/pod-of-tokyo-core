@@ -41,10 +41,14 @@ class GameService:
     def remove(self, sid):
         if sid in self.players:
             del self.players[sid]
-            print(f"[-] Removed player {sid}")
 
     def start_game(self):
-        game_data = self.controller.init_game(self.players.keys())
+        game_data = self.controller.init_game(
+            [
+                {player_id: player_name}
+                for player_id, player_name in self.players.items()
+            ]
+        )
         players = game_data["players"]
         for p in players:
             self.players[p["playerId"]] = PodClient(

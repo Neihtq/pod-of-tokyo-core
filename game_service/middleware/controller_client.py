@@ -5,8 +5,8 @@ class ControllerClient:
     def __init__(self, base_url):
         self.base_url = base_url
 
-    def init_game(self, player_ids):
-        return http.post(self.base_url, "initGame", {"playerId": list(player_ids)})
+    def init_game(self, players):
+        return http.post(self.base_url, "initGame", {"players": players})
 
     def destroy_tokyo_bay(self):
         return http.post(self.base_url, "destroyTokyoBay")
