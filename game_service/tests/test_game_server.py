@@ -1,15 +1,12 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from game_service.game_server import GameServer
 
 
 class TestGameServer(unittest.TestCase):
     def setUp(self):
-        """
-        Set up a new GameServer instance for each test.
-        """
-        with patch("game_service.game_server.GameService") as mock_game_service:
+        with patch("game_service.game_server.GameService"):
             self.game_server = GameServer()
             self.socketio = self.game_server.socketio
             self.app = self.game_server.app

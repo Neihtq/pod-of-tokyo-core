@@ -1,5 +1,7 @@
 class UpdateEvent:
-    def __init__(self, location, updates=None, health=0, damage=0, energy=0, score=0):
+    def __init__(
+        self, location=None, updates=None, health=0, damage=0, energy=0, score=0
+    ):
         if updates:
             self.health = int(updates["health"])
             self.damage = int(updates["damage"])

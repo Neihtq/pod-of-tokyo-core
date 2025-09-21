@@ -30,12 +30,9 @@ class TestGameService(unittest.TestCase):
     @patch("game_service.utils.http_utils.post")
     @patch("game_service.service.game_service.ControllerClient")
     def test_start_game(self, mock_controller_client, mock_http_post):
-        """
-        Tests the start_game method to ensure it correctly initializes the game state.
-        """
-        # Arrange
+        # arrange
         mock_http_post.side_effect = [
-            {  # First call to init_game
+            {
                 "players": [
                     {
                         "playerId": "player1",
@@ -54,27 +51,26 @@ class TestGameService(unittest.TestCase):
                     "outside": "node3",
                 },
             },
-            # Subsequent calls from get_state()
             {
                 "health": 10,
                 "score": 0,
                 "energy": 0,
                 "location": "node3",
-            },  # For player 1
+            },
             {
                 "health": 10,
                 "score": 0,
                 "energy": 0,
                 "location": "node3",
-            },  # For player 2
+            },
         ]
         self.game_service.players = {"player1": None, "player2": None}
         self.game_service.player_order = []
 
-        # Act
+        # act
         self.game_service.start_game()
 
-        # Assert
+        # assert
         self.assertEqual(len(self.game_service.player_order), 2)
         self.assertIn("player1", self.game_service.players)
         self.assertIn("player2", self.game_service.players)
@@ -231,7 +227,6 @@ class TestGameService(unittest.TestCase):
         self.game_service.players = {"player1": player_mock}
         self.game_service.controller.destroy_all = MagicMock()
 
-        # Simulate a winner to exit the loop
         winner_pod = MagicMock()
         winner_pod.name = "player1"
         self.game_service.winner = winner_pod
@@ -251,7 +246,6 @@ class TestGameService(unittest.TestCase):
         self.game_service.players = {"player1": player_mock}
         self.game_service.controller.destroy_all = MagicMock()
 
-        # Test the loop itself
         winner_pod = MagicMock()
         winner_pod.name = "player1"
         self.game_service.winner = None

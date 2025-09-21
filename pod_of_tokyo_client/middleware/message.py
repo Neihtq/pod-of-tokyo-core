@@ -11,7 +11,7 @@ class Message:
 
         update = data.get("update", None)
         if update:
-            self.player_update = UpdateEvent(update)
+            self.player_update = UpdateEvent(updates=update)
 
         game_state_dict = data.get("gameState", None)
         if game_state_dict:
