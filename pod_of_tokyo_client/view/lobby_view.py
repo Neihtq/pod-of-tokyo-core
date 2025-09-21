@@ -35,13 +35,13 @@ class LobbyView(GreenBorderVertical):
         player_list.extend(players)
 
     @on(Button.Pressed)
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == START_GAME_BUTTON_ID:
-            self.controller.start_game()
+            await self.controller.start_game()
 
-    def on_key(self, event) -> None:
+    async def on_key(self, event) -> None:
         if event.key == "enter":
-            self.controller.start_game()
+            await self.controller.start_game()
 
     def on_mount(self) -> None:
         self.focus_element.focus()

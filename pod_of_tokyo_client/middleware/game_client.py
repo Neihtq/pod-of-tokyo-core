@@ -33,3 +33,6 @@ class GameClient:
         response = await self.sio.call("get_name")
         self._get_name_handler(response["playerName"])
         await self.sio.wait()
+
+    async def send_message(self, message):
+        await self.sio.emit(message)

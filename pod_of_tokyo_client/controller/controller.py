@@ -89,7 +89,8 @@ class Controller:
     def update_events(self, event):
         self.model.add_event(event)
 
-    def start_game(self):
+    async def start_game(self):
+        await self.client.send_message("start_game")
         self.view.compose_menu(StartView)
 
     async def confirm(self):
