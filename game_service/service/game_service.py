@@ -257,8 +257,8 @@ class GameService:
                     self.send_player_update(player_update, p_id)
                     self.notify_all(f"{pod.name} left Tokyo!")
 
-    def call_and_wait(self, command, player_id, payload={}):
-        return self.socketio.call(command, payload, to=player_id, timeout=60)
+    def call_and_wait(self, command: MessageType, player_id: str, payload={}):
+        return self.socketio.call(command.value, payload, to=player_id, timeout=60)
 
     def send_player_update(self, player_update, player_id):
         payload = {"update": player_update.to_dict()}
