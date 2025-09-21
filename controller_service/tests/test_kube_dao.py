@@ -30,7 +30,8 @@ class TestKubeDao(unittest.TestCase):
             self.kube_dao = KubeDao()
 
     @patch("controller_service.kube.kube_dao.subprocess.run")
-    def test_init_minikube_start(self, mock_subprocess_run):
+    @patch("kubernetes.config.load_kube_config")
+    def test_init_minikube_start(self, mock_load_kube_config, mock_subprocess_run):
         self.kube_dao = KubeDao()
         mock_subprocess_run.assert_called_once_with(["minikube", "start"], check=True)
 

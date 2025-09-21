@@ -7,7 +7,7 @@ from pod_of_tokyo_client.middleware.game_client import GameClient
 
 @pytest.fixture
 def game_client():
-    with patch("socketio.Client") as mock_socketio_client:
+    with patch("socketio.AsyncClient") as mock_socketio_client:
         mock_sio_instance = MagicMock()
         mock_socketio_client.return_value = mock_sio_instance
 
@@ -17,6 +17,7 @@ def game_client():
         mock_sio_instance.call = AsyncMock()
         mock_sio_instance.emit = AsyncMock()
         mock_sio_instance.wait = AsyncMock()
+        mock_sio_instance.on = MagicMock()
 
         yield client
 
@@ -44,7 +45,8 @@ async def test_event_handler(game_client):
 
     game_client._register_events()
 
-    assert game_client.sio.event.call_count == 3
+    assert game_client.sio.event.call_count == 2
+    assert game_client.sio.on.call_count == 1
 
     with patch("pod_of_tokyo_client.middleware.game_client.Message") as MockMessage:
         MockMessage.return_value = MagicMock()
