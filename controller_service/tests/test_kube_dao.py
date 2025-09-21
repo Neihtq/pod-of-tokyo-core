@@ -14,15 +14,23 @@ class MockPod:
 class TestKubeDao(unittest.TestCase):
 
     
-    @patch('subprocess.run')
     @patch('kubernetes.config.load_kube_config')
     @patch('kubernetes.client.CoreV1Api')
+    @patch('controller_service.kube.kube_dao.subprocess.run')
     def setUp(self, mock_core_v1_api, mock_load_kube_config, mock_subprocess_run):
         self.mock_core_v1_api_class = mock_core_v1_api
         self.mock_core_v1_api = mock_core_v1_api.return_value
+        self.mock_subprocess_run = mock_subprocess_run
+        mock_load_kube_config.return_value = None
         with patch('controller_service.kube.kube_dao.client.CoreV1Api') as mock_client_core_v1_api:
             mock_client_core_v1_api.return_value = self.mock_core_v1_api
             self.kube_dao = KubeDao()
+
+    @patch('controller_service.kube.kube_dao.subprocess.run')
+    def test_init_minikube_start(self, mock_subprocess_run):
+        # Re-initialize KubeDao to ensure __init__ is called
+        self.kube_dao = KubeDao()
+        mock_subprocess_run.assert_called_once_with(["minikube", "start"], check=True)
 
     def test_create_namespaces(self):
         location_names = ["outside", "tokyo-city", "tokyo-bay"]

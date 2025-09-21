@@ -67,6 +67,8 @@ class ControllerServer:
 
                 print(f"Successfully created pod '{pod_name}' listening on {pod_url}")
 
+            print(f"Players received: {players}")
+            print(f"Processed players: {processed_players}")
             print(self.players_by_id)
             print(self.player_ids_by_name)
 

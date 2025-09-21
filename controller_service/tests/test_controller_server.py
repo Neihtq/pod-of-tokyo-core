@@ -74,9 +74,9 @@ class TestControllerServer(unittest.TestCase):
         self.mock_kube_dao_instance.delete_all_namespaces.assert_called_once()
         self.assertEqual(data['status'], 'success')
 
-    @patch('controller_service.middleware.pod_client.update_monster_location')
-    def test_relocate(self, mock_update_monster_location):
-        mock_update_monster_location.return_value = {}
+    @patch('pod_of_tokyo_commons.utils.http_utils.post')
+    def test_relocate(self, mock_http_post):
+        mock_http_post.return_value = {}
         self.server.players_by_id = {'player1': ('Gigazaur', 'http://127.0.0.1:30000', 30000)}
         response = self.app.post('/relocate', json={
             'playerId': 'player1',
@@ -88,8 +88,8 @@ class TestControllerServer(unittest.TestCase):
         self.mock_kube_dao_instance.move_pod.assert_called_once_with(
             'Gigazaur', from_namespace='outside', target_namespace='tokyo-city', service_port=30000
         )
-        mock_update_monster_location.assert_called_once_with(
-            url='http://127.0.0.1:30000', location='tokyo-city'
+        mock_http_post.assert_called_once_with(
+            base_url='http://127.0.0.1:30000', endpoint="updateLocation", payload={"location": 'tokyo-city'}
         )
         self.assertEqual(data['status'], 'success')
 
