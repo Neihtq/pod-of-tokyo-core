@@ -4,12 +4,11 @@ from collections import Counter, defaultdict
 from flask_socketio import SocketIO
 from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
 from pod_of_tokyo_commons.entities import DiceSymbols, GameState, Player
-from pod_of_tokyo_commons.model import MessageType, PodStatus
+from pod_of_tokyo_commons.model import Location, MessageType, PodStatus
 from pod_of_tokyo_commons.model.update_event import UpdateEvent
 
 from game_service.middleware.controller_client import ControllerClient
 from game_service.middleware.pod_client import PodClient
-from game_service.model import Location
 from game_service.service.dice_service import roll_dices
 from game_service.utils.constants import ROOM
 
@@ -65,7 +64,7 @@ class GameService:
                 base_url=p["podUrl"], name=p["name"], player_id=p["playerId"]
             )
             self.player_order.append(player_id)
-            update = UpdateEvent(location=Location.OUTSIDE.value)
+            update = UpdateEvent(location=Location.OUTSIDE)
             self.send_player_update(player_update=update, player_id=player_id)
 
         self.num_players_alive = len(self.player_order)
@@ -104,11 +103,12 @@ class GameService:
     def start_turn(self, player_id):
         print(f"Beginning turn of {player_id}")
         pod = self.players[player_id]
-        _, score, _, location = pod.get_state()
+        _, score, _, location_key = pod.get_state()
 
-        if not self.is_in_tokyo(location):
+        location = self.locations[location_key]
+        if not self.is_in_tokyo(location_key):
             score = self.fill_empty_space(pod, score)
-        elif self.is_in_tokyo(location):
+        elif self.is_in_tokyo(location_key):
             pod.update_score(2)
             score += 2
             player_update = UpdateEvent(location=location, score=2)
@@ -121,36 +121,32 @@ class GameService:
         dices = self.reroll_dices(pod)
         self.resolve_dices(pod, dices, location)
 
-        if self.locations[location] == Location.OUTSIDE:
+        if location == Location.OUTSIDE:
             score = self.fill_empty_space(pod, score)
 
         self.check_winner(pod, score)
 
-    def is_in_tokyo(self, location):
+    def is_in_tokyo(self, location_key):
         return (
-            self.locations[location] == Location.CITY
-            or self.locations[location] == Location.BAY
+            self.locations[location_key] == Location.CITY
+            or self.locations[location_key] == Location.BAY
         )
 
     def fill_empty_space(self, pod, score):
         node_state = self.controller.get_node_state()
-        new_location = None
+        location_key = None
         if node_state[TOKYO_CITY_KEY] is None:
-            new_location = Location.CITY
+            location_key = TOKYO_CITY_KEY
         elif self.num_players_alive > 4 and node_state[TOKYO_BAY_KEY] is None:
-            new_location = Location.BAY
+            location_key = TOKYO_BAY_KEY
 
-        if new_location:
-            location_msg = (
-                "Tokyo City" if new_location == Location.CITY else "Tokyo Bay"
-            )
-            self.controller.relocate(
-                pod.player_id, Location.OUTSIDE.value, new_location.value
-            )
-            self.notify_all(f"{pod.name} has conquered {location_msg}!")
+        if location_key:
+            location = self.locations[location_key]
+            self.controller.relocate(pod.player_id, OUTSIDE_KEY, location_key)
+            self.notify_all(f"{pod.name} has conquered {location.value}!")
             pod.update_score(1)
             score += 1
-            player_update = UpdateEvent(location=new_location.value, score=1)
+            player_update = UpdateEvent(location=location, score=1)
             self.send_player_update(player_update, pod.player_id)
             self.notify_all(f"{pod.name} received 1 star!")
 
@@ -198,7 +194,6 @@ class GameService:
                 self.notify_all(f"{pod.name} healed {amount} life points.")
             if key == DiceSymbols.FIST.value:
                 self.slap(pod, location, damage=amount)
-
             if key == DiceSymbols.THUNDER.value:
                 pod.charge_energy(energy=amount)
                 player_update = UpdateEvent(location=location, energy=amount)
@@ -227,11 +222,13 @@ class GameService:
 
             pod = self.players[p_id]
             health, _, _, p_location = pod.get_state()
-            if p_location == location:
+            if self.locations[p_location] == location:
                 continue
 
             pod.slap(damage)
-            player_update = UpdateEvent(location=p_location, damage=damage)
+            player_update = UpdateEvent(
+                location=self.locations[p_location], damage=damage
+            )
             self.send_player_update(player_update, p_id)
             self.notify_all(
                 f"{active_pod.name} slapped {pod.name}! {pod.name} lost {damage} life points."
@@ -249,14 +246,14 @@ class GameService:
                     self.notify_all(f"Tokyo Bay has been flooded!")
                     if player_at_bay:
                         pod_at_bay = self.players[player_at_bay]
-                        player_update = UpdateEvent(location=Location.OUTSIDE.value)
+                        player_update = UpdateEvent(location=Location.OUTSIDE)
                         self.send_player_update(player_update, player_at_bay)
                         self.notify_all(f"{pod_at_bay.name} left Tokyo!")
             elif self.is_in_tokyo(p_location):
                 response = self.call_and_wait(MessageType.YIELD, p_id)
                 if response["yield"]:
-                    self.controller.relocate(p_id, p_location, Location.OUTSIDE.value)
-                    player_update = UpdateEvent(location=Location.OUTSIDE.value)
+                    self.controller.relocate(p_id, p_location, OUTSIDE_KEY)
+                    player_update = UpdateEvent(location=Location.OUTSIDE)
                     self.send_player_update(player_update, p_id)
                     self.notify_all(f"{pod.name} left Tokyo!")
 

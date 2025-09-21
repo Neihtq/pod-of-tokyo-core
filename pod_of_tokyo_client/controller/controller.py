@@ -28,6 +28,7 @@ class Controller:
 
     async def connect(self, url):
         print("Creating game client!")
+        url = "http://localhost:10000"
         self.client = GameClient(server_url=url)
         self.client.set_message_handler(self.handle_message)
         self.client.set_get_name_handler(self.get_name_handler)

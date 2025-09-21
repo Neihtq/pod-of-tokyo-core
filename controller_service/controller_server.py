@@ -160,7 +160,7 @@ class ControllerServer:
         @self.app.route("/getNodeState", methods=["POST"])
         def get_node_state():
             pods_by_namespace = self.kube_dao.list_all_pods()
-            response = {}
+            response = {TOKYO_CITY_KEY: None, TOKYO_BAY_KEY: None, OUTSIDE_KEY: []}
 
             for namespace, pods in pods_by_namespace.items():
                 if namespace == TOKYO_CITY_KEY:

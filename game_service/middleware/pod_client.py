@@ -20,5 +20,5 @@ class PodClient:
         return http.post(self.base_url, "chargeEnergy", {"energy": energy})
 
     def get_state(self):
-        state = http.post(self.base_url, "getState")
+        state = http.post(self.base_url, "getStats")
         return (state["health"], state["score"], state["energy"], state["location"])

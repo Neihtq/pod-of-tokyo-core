@@ -1,6 +1,15 @@
+from pod_of_tokyo_commons.model.location import Location
+
+
 class UpdateEvent:
     def __init__(
-        self, location=None, updates=None, health=0, damage=0, energy=0, score=0
+        self,
+        location=Location.OUTSIDE,
+        updates=None,
+        health=0,
+        damage=0,
+        energy=0,
+        score=0,
     ):
         if updates:
             self.health = int(updates["health"])
@@ -13,7 +22,7 @@ class UpdateEvent:
             self.damage = damage
             self.energy = energy
             self.score = score
-            self.location = location
+            self.location = location.value
 
     def to_dict(self):
         return {

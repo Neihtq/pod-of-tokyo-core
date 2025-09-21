@@ -56,7 +56,7 @@ class PodOfTokyoView(App):
         player_stats_container = self.query_one(f"#{PLAYER_STATS_BOX_ID}")
         player_stats_container.remove_children()
         statics = [
-            Static(f"{stat}:\t{value}")
+            Static(f"{stat}: {value}")
             for stat, value in self.model.player_stats.items()
         ]
         player_stats_container.mount(Vertical(*statics))

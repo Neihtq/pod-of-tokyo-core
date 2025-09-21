@@ -1,5 +1,6 @@
 import os
 import subprocess
+import threading
 import time
 from collections import defaultdict
 
@@ -21,6 +22,13 @@ class KubeDao:
         subprocess.run(["minikube", "start"], check=True)
         config.load_kube_config()
         self.v1 = client.CoreV1Api()
+
+        thread = threading.Thread(target=self._start_minikube_tunnel, daemon=True)
+        thread.start()
+        time.sleep(1)
+
+    def _start_minikube_tunnel(self):
+        subprocess.run(["minikube", "tunnel"], check=True)
 
     def list_all_namespaces(self):
         namespace_list = self.v1.list_namespace(label_selector="location")
@@ -173,6 +181,7 @@ class KubeDao:
         self.v1.create_namespaced_pod(namespace=target_namespace, body=pod_manifest)
         self.expose_pod_port(pod_name, target_namespace, service_port)
         self.wait_for_pod_ready(pod_name, target_namespace)
+        time.sleep(1)
 
     def get_ip(self):
         return subprocess.check_output(["minikube", "ip"], text=True).strip()
