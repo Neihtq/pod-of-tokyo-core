@@ -36,7 +36,8 @@ class ControllerServer:
             self.kube_dao.create_namespaces(LOCATION_NAMES)
             namespaces = self.kube_dao.list_all_namespaces()
 
-            players = []
+            # Re-initialize players to an empty list to store processed player data
+            processed_players = []
             for i in range(len(players)):
                 for k in players[i]:
                     player_id = k
@@ -49,7 +50,7 @@ class ControllerServer:
                     service_port=self.state_service_port,
                 )
                 pod_url = join_url(self.ip, self.state_service_port)
-                players.append(
+                processed_players.append(
                     {
                         "playerId": player_id,
                         "name": pod_name,
@@ -69,7 +70,7 @@ class ControllerServer:
             print(self.players_by_id)
             print(self.player_ids_by_name)
 
-            return jsonify({"players": players, "locations": namespaces})
+            return jsonify({"players": processed_players, "locations": namespaces})
 
         @self.app.route("/destroyTokyoBay", methods=["POST"])
         def destroy_tokyo_bay():

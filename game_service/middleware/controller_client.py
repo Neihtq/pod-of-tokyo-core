@@ -12,7 +12,7 @@ class ControllerClient:
         return http.post(self.base_url, "destroyTokyoBay")
 
     def get_pod_url(self, player_id):
-        return http.post(self.base_url, "getPodId", {"playerId": player_id})
+        return http.post(self.base_url, "getPodUrl", {"playerId": player_id})
 
     def destroy_all(self):
         return http.post(self.base_url, "destroyAll")

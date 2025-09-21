@@ -20,15 +20,13 @@ class KubeDao:
     def __init__(self):
         subprocess.run(["minikube", "start"], check=True)
         config.load_kube_config()
-        self.client = client.CoreV1Api()
+        self.v1 = client.CoreV1Api()
 
     def list_all_namespaces(self):
-        namespace_list = self.client.list_namespace()
+        namespace_list = self.v1.list_namespace(label_selector="location")
         namespaces = []
         for ns in namespace_list.items:
-            name = ns.metadata.name
-            if ns.metadata.name in MONSTER_NAMES_SET:
-                namespaces.append(name)
+            namespaces.append(ns.metadata.name)
 
         print(f"All listed namespaces:\n{namespaces}")
         return namespaces
@@ -38,18 +36,18 @@ class KubeDao:
             namespace = client.V1Namespace(
                 metadata=client.V1ObjectMeta(name=name, labels={"location": name})
             )
-            self.client.create_namespace(body=namespace)
+            self.v1.create_namespace(body=namespace)
 
     def delete_namespace(self, namespace):
-        self.client.delete_namespace(name=namespace)
+        self.v1.delete_namespace(name=namespace)
 
     def delete_all_namespaces(self):
         namespaces = self.list_all_namespaces()
         for ns in namespaces:
-            self.client.delete_namespace(ns["name"])
+            self.v1.delete_namespace(ns)
 
     def list_all_pods(self):
-        pods = self.client.list_pod_for_all_namespaces().items
+        pods = self.v1.list_pod_for_all_namespaces().items
         pods_by_namespaces = defaultdict(list)
         for pod in pods:
             namespace = pod.metadata.namespace
@@ -66,7 +64,7 @@ class KubeDao:
         service_port,
         image=STATE_SERVICE_DOCKER_IMAGE,
     ):
-        print(f"Creating pod '{pod_name}' in '{namespace}")
+        print(f"Creating pod '{pod_name}' in '{namespace}'")
         pod_manifest = client.V1Pod(
             metadata=client.V1ObjectMeta(
                 name=pod_name, labels={"monster-name": pod_name}
@@ -101,7 +99,7 @@ class KubeDao:
             ),
         )
 
-        self.client.create_namespaced_pod(namespace=namespace, body=pod_manifest)
+        self.v1.create_namespaced_pod(namespace=namespace, body=pod_manifest)
         return self.expose_pod_port(pod_name, namespace, service_port)
 
     def expose_pod_port(self, pod_name, namespace, service_port):
@@ -117,20 +115,20 @@ class KubeDao:
             ),
         )
 
-        service = self.client.create_namespaced_service(
+        service = self.v1.create_namespaced_service(
             namespace=namespace, body=service_spec
         )
         return service.spec.ports[0].node_port
 
     def delete_pod(self, pod_name, namespace):
-        print(f"Deleting pod '{pod_name}' in namespace '{namespace}")
-        self.client.delete_namespaced_pod(name=pod_name, namespace=namespace)
-        self.client.delete_namespaced_service(
+        print(f"Deleting pod '{pod_name}' in namespace '{namespace}'")
+        self.v1.delete_namespaced_pod(name=pod_name, namespace=namespace)
+        self.v1.delete_namespaced_service(
             name=f"{pod_name}-state-service", namespace=namespace
         )
 
     def get_pod(self, pod_name, namespace):
-        pod = self.client.read_namespaced_pod(name=pod_name, namespace=namespace)
+        pod = self.v1.read_namespaced_pod(name=pod_name, namespace=namespace)
         return pod
 
     def move_pod(self, pod_name, from_namespace, target_namespace, service_port):
@@ -172,7 +170,7 @@ class KubeDao:
         )
 
         print(f"Recreating pod '{pod_name}'")
-        self.client.create_namespaced_pod(namespace=target_namespace, body=pod_manifest)
+        self.v1.create_namespaced_pod(namespace=target_namespace, body=pod_manifest)
         self.expose_pod_port(pod_name, target_namespace, service_port)
         self.wait_for_pod_ready(pod_name, target_namespace)
 
@@ -183,7 +181,7 @@ class KubeDao:
         print(f"Waiting for pod deletion of '{pod_name}'")
         for _ in range(timeout):
             try:
-                self.client.read_namespaced_pod(pod_name, namespace)
+                self.v1.read_namespaced_pod(pod_name, namespace)
             except ApiException as e:
                 if e.status == 404:
                     return
@@ -195,7 +193,7 @@ class KubeDao:
     def wait_for_pod_ready(self, pod_name, namespace, timeout=120):
         print(f"Waiting for pod startup of '{pod_name}'")
         for _ in range(timeout):
-            pod = self.client.read_namespaced_pod(pod_name, namespace)
+            pod = self.v1.read_namespaced_pod(pod_name, namespace)
             if pod.status.phase == "Running":
                 conditions = pod.status.conditions or []
                 ready = any(
