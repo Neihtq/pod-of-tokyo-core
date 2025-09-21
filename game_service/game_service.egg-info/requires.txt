@@ -1,9 +1,0 @@
-Flask
-flask-socketio
-requests
-kubernetes
-psycopg2-binary
-setuptools
-python-dotenv
-textual
-pytest

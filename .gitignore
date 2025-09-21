@@ -20,4 +20,5 @@ Thumbs.db
 
 .env
 
-*.egg*
+**/*.egg-info/
+.coverage
