@@ -1,6 +1,7 @@
 class Model:
     def __init__(self):
         self.player_name = ""
+        self.alive = True
         self.game_state = {}
         self.player_stats = {"Health": 0, "Score": 0, "Energy": 0, "Location": ""}
         self.events = []
@@ -15,6 +16,7 @@ class Model:
         self.view.add_event(event)
 
     def update_player_stats(self, player_update):
+        print(f"Receive player stats update:\n{player_update}")
         self.player_stats["Health"] += player_update.health
         self.player_stats["Score"] += player_update.damage
         self.player_stats["Energy"] += player_update.energy

@@ -9,3 +9,4 @@ class MessageType(Enum):
     UPDATE = "UPDATE"
     DEATH = "DEATH"
     LOBBY = "LOBBY"
+    START_GAME = "START_GAME"

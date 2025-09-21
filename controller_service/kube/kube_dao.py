@@ -205,3 +205,10 @@ class KubeDao:
             time.sleep(2)
 
         raise TimeoutError(f"Pod {pod_name} start up timed out after {timeout} seconds")
+
+    def is_pod_active(self, pod_name, namespace):
+        pod = self.v1.read_namespaced_pod(pod_name, namespace)
+        if pod.status.phase == "Running":
+            conditions = pod.status.conditions or []
+            ready = any(c.type == "Ready" and c.status == "True" for c in conditions)
+            return ready

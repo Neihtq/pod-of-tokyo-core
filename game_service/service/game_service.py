@@ -1,10 +1,10 @@
 import time
 from collections import Counter, defaultdict
 
-from flask_socketio import SocketIO, join_room
+from flask_socketio import SocketIO
 from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
 from pod_of_tokyo_commons.entities import DiceSymbols, GameState, Player
-from pod_of_tokyo_commons.model import MessageType
+from pod_of_tokyo_commons.model import MessageType, PodStatus
 from pod_of_tokyo_commons.model.update_event import UpdateEvent
 
 from game_service.middleware.controller_client import ControllerClient
@@ -42,7 +42,16 @@ class GameService:
         if sid in self.players:
             del self.players[sid]
 
+    def wait_for_game_ready(self):
+        print("Waiting for fleet to be ready")
+        ready = False
+        while not ready:
+            fleet_status = self.controller.get_fleet_status()
+            ready = all(status == PodStatus.ACTIVE.value for status in fleet_status)
+            time.sleep(5)
+
     def start_game(self):
+        print("Starting game.")
         game_data = self.controller.init_game(
             [
                 {player_id: player_name}
@@ -60,11 +69,18 @@ class GameService:
             self.send_player_update(player_update=update, player_id=player_id)
 
         self.num_players_alive = len(self.player_order)
-        self.locations = {
-            game_data["locations"][TOKYO_CITY_KEY]: Location.CITY,
-            game_data["locations"][TOKYO_BAY_KEY]: Location.BAY,
-            game_data["locations"][OUTSIDE_KEY]: Location.OUTSIDE,
+
+        key_to_location_map = {
+            TOKYO_CITY_KEY: Location.CITY,
+            TOKYO_BAY_KEY: Location.BAY,
+            OUTSIDE_KEY: Location.OUTSIDE,
         }
+        self.locations = {
+            location: key_to_location_map[location]
+            for location in game_data["locations"]
+        }
+        self.notify_all_game_start()
+        self.wait_for_game_ready()
         self.notify_all("Game started!")
 
     def game_loop(self):
@@ -86,6 +102,7 @@ class GameService:
         self.__init__(self.socketio, self.controller.base_url)
 
     def start_turn(self, player_id):
+        print(f"Beginning turn of {player_id}")
         pod = self.players[player_id]
         _, score, _, location = pod.get_state()
 
@@ -257,6 +274,9 @@ class GameService:
         game_state = self.get_game_state().to_dict()
         payload = {"message": message, "gameState": game_state}
         self.socketio.emit(MessageType.EVENT.value, payload, to=ROOM)
+
+    def notify_all_game_start(self):
+        self.socketio.emit(MessageType.START_GAME.value, {}, to=ROOM)
 
     def decide_starter(self):
         players = self.player_order.copy()

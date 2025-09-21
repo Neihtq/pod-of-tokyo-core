@@ -1,1 +1,2 @@
 from pod_of_tokyo_commons.model.message_type import MessageType
+from pod_of_tokyo_commons.model.pod_status import PodStatus

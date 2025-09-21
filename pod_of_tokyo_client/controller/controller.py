@@ -2,10 +2,10 @@ import asyncio
 
 from pod_of_tokyo_client.middleware.game_client import GameClient
 from pod_of_tokyo_client.middleware.message import Message
+from pod_of_tokyo_client.view.disabled_view import DisabledView
 from pod_of_tokyo_client.view.lobby_view import LobbyView
 from pod_of_tokyo_client.view.phase_1 import Phase1
 from pod_of_tokyo_client.view.phase_2 import Phase2
-from pod_of_tokyo_client.view.start_view import StartView
 from pod_of_tokyo_client.view.view import PodOfTokyoView
 from pod_of_tokyo_client.view.yield_view import YieldView
 from pod_of_tokyo_commons.model import MessageType
@@ -38,6 +38,7 @@ class Controller:
         await self.connect(address)
 
     def update_lobby(self, players) -> None:
+        print("Updating Lobby")
         self.model.players = players
         lobby_view = self.view.query_one(LobbyView)
         lobby_view.update_list()
@@ -48,16 +49,20 @@ class Controller:
         )
 
     def handle_message(self, event_name, message: Message):
+        print(f"Received message: event_name={event_name}, message={message}")
         message_type = MessageType(event_name)
         response = None
         if message_type == MessageType.LOBBY:
             self.update_lobby(message.members)
+        elif message_type == MessageType.START_GAME:
+            self.view.compose_menu(DisabledView)
         elif message_type == MessageType.EVENT:
             self.update_events(message.message)
         elif message_type == MessageType.UPDATE:
             self.model.update_player_stats(message.player_update)
         elif message_type == MessageType.DEATH:
-            pass
+            self.model.alive = False
+            self.view.compose_menu(DisabledView)
         else:
             response = self.handle_interactive_message(message_type, message)
 
@@ -81,11 +86,11 @@ class Controller:
             self.model.update_player_stats(message.player_update)
 
     def update_events(self, event):
+        print("Updating events")
         self.model.add_event(event)
 
     async def start_game(self):
         await self.client.send_message("start_game")
-        self.view.compose_menu(StartView)
 
     async def confirm(self):
         await self.push_response_to_queue("ACK")

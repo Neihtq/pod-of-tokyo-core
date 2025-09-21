@@ -43,3 +43,6 @@ class ControllerClient:
         }
         """
         return http.post(self.base_url, "getNodeState")
+
+    def get_fleet_status(self):
+        return http.post(self.base_url, "getFleetStatus", {})["fleetStatus"]

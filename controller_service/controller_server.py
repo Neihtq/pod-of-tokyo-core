@@ -8,6 +8,7 @@ from pod_of_tokyo_commons.constants import (
     TOKYO_BAY_KEY,
     TOKYO_CITY_KEY,
 )
+from pod_of_tokyo_commons.model import PodStatus
 
 
 def join_url(ip, port):
@@ -28,10 +29,27 @@ class ControllerServer:
         def ping():
             return "Alive"
 
+        @self.app.route("/getFleetStatus", methods=["POST"])
+        def get_fleet_status():
+            pod_by_namespace = self.kube_dao.list_all_pods()
+            fleet_status = []
+            for namespace, pods in pod_by_namespace.items():
+                for pod_name in pods:
+                    if self.kube_dao.is_pod_active(
+                        pod_name=pod_name, namespace=namespace
+                    ):
+                        fleet_status.append(PodStatus.ACTIVE.value)
+                    else:
+                        fleet_status.append(PodStatus.INACTIVE.value)
+
+            return jsonify({"fleetStatus": fleet_status})
+
         @self.app.route("/initGame", methods=["POST"])
         def init_game():
             data = request.get_json()
             players = data.get("players")
+            print("PLAYERS")
+            print(players)
 
             self.kube_dao.create_namespaces(LOCATION_NAMES)
             namespaces = self.kube_dao.list_all_namespaces()
