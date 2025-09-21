@@ -178,5 +178,12 @@ class TestKubeDao(unittest.TestCase):
             self.kube_dao.wait_for_pod_ready(pod_name, namespace, timeout=1)
         self.assertEqual(self.mock_core_v1_api.read_namespaced_pod.call_count, 1) # Called once, then loop times out
 
+    @patch('controller_service.kube.kube_dao.subprocess.check_output')
+    def test_get_ip(self, mock_check_output):
+        mock_check_output.return_value = '192.168.59.100\n'
+        ip = self.kube_dao.get_ip()
+        mock_check_output.assert_called_once_with(["minikube", "ip"], text=True)
+        self.assertEqual(ip, '192.168.59.100')
+
 if __name__ == '__main__':
     unittest.main()
