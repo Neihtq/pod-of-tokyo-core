@@ -1,7 +1,7 @@
 import time
 from collections import Counter, defaultdict
 
-from flask_socketio import join_room
+from flask_socketio import SocketIO, join_room
 from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
 from pod_of_tokyo_commons.entities import DiceSymbols, GameState, Player
 from pod_of_tokyo_commons.model import MessageType
@@ -11,13 +11,13 @@ from game_service.middleware.controller_client import ControllerClient
 from game_service.middleware.pod_client import PodClient
 from game_service.model import Location
 from game_service.service.dice_service import roll_dices
+from game_service.utils.constants import ROOM
 
 WINNING_CONDITION = 20
-ROOM = "king-of-tokyo"
 
 
 class GameService:
-    def __init__(self, socketio, controller_url):
+    def __init__(self, socketio: SocketIO, controller_url):
         self.socketio = socketio
         self.players = {}
         self.player_order = []

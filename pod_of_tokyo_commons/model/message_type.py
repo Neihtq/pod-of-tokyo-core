@@ -1,11 +1,11 @@
-from enum import Enum, auto
+from enum import Enum
 
 
 class MessageType(Enum):
-    ROLL = auto()
-    REROLL_AND_RESOLVE = auto()
-    YIELD = auto()
-    EVENT = auto()
-    UPDATE = auto()
-    DEATH = auto()
-    LOBBY = auto()
+    ROLL = "ROLL"
+    REROLL_AND_RESOLVE = "REROLL_AND_RESOLVE"
+    YIELD = "YIELD"
+    EVENT = "EVENT"
+    UPDATE = "UPDATE"
+    DEATH = "DEATH"
+    LOBBY = "LOBBY"

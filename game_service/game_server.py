@@ -1,9 +1,11 @@
 from typing import Protocol, cast
 
 from flask import Flask, request
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, join_room
+from pod_of_tokyo_commons.model import MessageType
 
 from game_service.service.game_service import GameService
+from game_service.utils.constants import ROOM
 
 
 class SocketRequest(Protocol):
@@ -29,11 +31,11 @@ class GameServer:
         self._register_events()
 
     def _register_events(self):
-
         @self.socketio.on("connect")
         def on_connect():
             sid = socket_request.sid
             self.connection_ids.add(sid)
+            join_room(ROOM, sid=sid)
             self.game_service.add(sid)
 
         @self.socketio.on("disconnect")
@@ -46,6 +48,11 @@ class GameServer:
         def handle_start_game(json):
             print("Starting game")
             self.socketio.start_background_task(self.game_service.game_loop)
+
+    def notify_all(self):
+        self.socketio.emit(
+            MessageType.LOBBY, {"members": list(self.connection_ids)}, to=ROOM
+        )
 
     def run(self):
         self.socketio.run(self.app, host=self.host, port=self.port)
