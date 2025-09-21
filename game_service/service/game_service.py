@@ -95,7 +95,7 @@ class GameService:
             pod.update_score(2)
             score += 2
             player_update = UpdateEvent(location=location, score=2)
-            self.send_player_update(pod.player_id, player_update)
+            self.send_player_update(player_update, pod.player_id)
             self.notify_all(f"{pod.name} received 2 stars!")
 
         if self.check_winner(pod, score):
@@ -134,7 +134,7 @@ class GameService:
             pod.update_score(1)
             score += 1
             player_update = UpdateEvent(location=new_location.value, score=1)
-            self.send_player_update(pod.player_id, player_update)
+            self.send_player_update(player_update, pod.player_id)
             self.notify_all(f"{pod.name} received 1 star!")
 
         return score
@@ -177,7 +177,7 @@ class GameService:
             if key == DiceSymbols.HEART.value:
                 pod.heal(life=amount)
                 player_update = UpdateEvent(location=location, health=amount)
-                self.send_player_update(pod.player_id, player_update)
+                self.send_player_update(player_update, pod.player_id)
                 self.notify_all(f"{pod.name} healed {amount} life points.")
             if key == DiceSymbols.FIST.value:
                 self.slap(pod, location, damage=amount)
@@ -185,7 +185,7 @@ class GameService:
             if key == DiceSymbols.THUNDER.value:
                 pod.charge_energy(energy=amount)
                 player_update = UpdateEvent(location=location, energy=amount)
-                self.send_player_update(pod.player_id, player_update)
+                self.send_player_update(player_update, pod.player_id)
                 self.notify_all(f"{pod.name} charged {amount} energy.")
 
         num_counter = 0
@@ -197,8 +197,8 @@ class GameService:
                 score += int(num.value) * counter[num.value]  # type:ignore
         if num_counter >= score_threshold:
             pod.update_score(score=score)
-            player_update = UpdateEvent(location=location, score=amount)
-            self.send_player_update(pod.player_id, player_update)
+            player_update = UpdateEvent(location=location, score=score)
+            self.send_player_update(player_update, pod.player_id)
             msg_suffix = "star" if score == 1 else "stars"
             message = f"{pod.name} received {score} {msg_suffix}!"
             self.notify_all(message)
@@ -215,7 +215,7 @@ class GameService:
 
             pod.slap(damage)
             player_update = UpdateEvent(location=p_location, damage=damage)
-            self.send_player_update(p_id, player_update)
+            self.send_player_update(player_update, p_id)
             self.notify_all(
                 f"{active_pod.name} slapped {pod.name}! {pod.name} lost {damage} life points."
             )
@@ -233,14 +233,14 @@ class GameService:
                     if player_at_bay:
                         pod_at_bay = self.players[player_at_bay]
                         player_update = UpdateEvent(location=Location.OUTSIDE.value)
-                        self.send_player_update(p_id, player_update)
+                        self.send_player_update(player_update, player_at_bay)
                         self.notify_all(f"{pod_at_bay.name} left Tokyo!")
             elif self.is_in_tokyo(p_location):
                 response = self.call_and_wait(MessageType.YIELD, p_id)
                 if response["yield"]:
                     self.controller.relocate(p_id, p_location, Location.OUTSIDE.value)
                     player_update = UpdateEvent(location=Location.OUTSIDE.value)
-                    self.send_player_update(p_id, player_update)
+                    self.send_player_update(player_update, p_id)
                     self.notify_all(f"{pod.name} left Tokyo!")
 
     def call_and_wait(self, command, player_id, payload={}):
@@ -263,6 +263,8 @@ class GameService:
         winners = []
         max_score = 0
         while len(winners) != 1:
+            winners = []
+            max_score = 0
             self.notify_all("Determining who starts...")
             for player_id in players:
                 dices = roll_dices(6)
@@ -275,8 +277,6 @@ class GameService:
                 time.sleep(1)
 
             players = winners.copy()
-            winners = []
-            max_score = 0
 
         starter = winners[0]
         return self.player_order.index(starter)
