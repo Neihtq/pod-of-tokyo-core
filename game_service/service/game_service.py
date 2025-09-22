@@ -304,7 +304,7 @@ class GameService:
         game_state = self.get_game_state().to_dict()
         payload = {"message": message, "gameState": game_state}
         self.socketio.emit(MessageType.EVENT.value, payload, to=ROOM)
-        time.sleep(0.5)
+        time.sleep(1.5)
 
     def notify_all_game_start(self):
         self.socketio.emit(MessageType.START_GAME.value, {}, to=ROOM)
