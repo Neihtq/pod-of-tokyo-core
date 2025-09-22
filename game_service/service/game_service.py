@@ -267,13 +267,8 @@ class GameService:
                 self.notify_all(f"{pod.name} died!")
 
                 if self.num_players_alive <= 4:
-                    player_at_bay = self.controller.destroy_tokyo_bay()["playerId"]
-                    self.notify_all(f"Tokyo Bay has been flooded!")
-                    if player_at_bay:
-                        pod_at_bay = self.players[player_at_bay]
-                        player_update = UpdateEvent(location=Location.OUTSIDE)
-                        self.send_player_update(player_update, player_at_bay)
-                        self.notify_all(f"{pod_at_bay.name} left Tokyo!")
+                    self.destroy_tokyo_bay()
+
             elif self.is_in_tokyo(location_key=p_location):
                 response = self.call_and_wait(MessageType.YIELD, p_id)
                 if response["isYielding"]:
@@ -283,6 +278,15 @@ class GameService:
                     self.send_player_update(player_update, p_id)
 
             time.sleep(0.5)
+
+    def destroy_tokyo_bay(self):
+        player_at_bay = self.controller.destroy_tokyo_bay()["playerId"]
+        self.notify_all(f"Tokyo Bay has been flooded!")
+        if player_at_bay:
+            pod_at_bay = self.players[player_at_bay]
+            self.notify_all(f"{pod_at_bay.name} is leaving Tokyo!")
+            player_update = UpdateEvent(location=Location.OUTSIDE)
+            self.send_player_update(player_update, player_at_bay)
 
     def call_and_wait(self, command: MessageType, player_id: str, payload={}):
         return self.socketio.call(command.value, payload, to=player_id, timeout=600)[
