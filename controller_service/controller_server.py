@@ -15,11 +15,14 @@ def join_url(ip, port):
     return f"{ip}:{port}"
 
 
+IP_ADDRESS = "http://127.0.0.1"
+
+
 class ControllerServer:
     def __init__(self):
         self.app = Flask(__name__)
         self.kube_dao = KubeDao()
-        self.ip = "http://127.0.0.1"
+        self.ip = IP_ADDRESS
         self.state_service_port = 33333
 
         self.players_by_id = {}

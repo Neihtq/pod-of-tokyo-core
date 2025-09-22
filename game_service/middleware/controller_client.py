@@ -30,7 +30,7 @@ class ControllerClient:
 
     def destroy_pod(self, player_id, location):
         return http.post(
-            self.base_url, "destroyPod", {"player_id": player_id, "location": location}
+            self.base_url, "destroyPod", {"playerId": player_id, "location": location}
         )
 
     def get_node_state(self):

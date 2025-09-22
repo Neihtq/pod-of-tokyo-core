@@ -16,6 +16,8 @@ STATE_SERVICE_DOCKER_IMAGE = "neiht/state-service:latest"
 DB_HOST = "postgres-service.default.svc.cluster.local"
 DB_PORT = "5432"
 
+POSTGRES_YAML_PATH = "database_service/postgres.yaml"
+
 
 class KubeDao:
     def __init__(self):
@@ -23,8 +25,11 @@ class KubeDao:
         config.load_kube_config()
         self.v1 = client.CoreV1Api()
 
+        subprocess.run(["kubectl", "apply", "-f", POSTGRES_YAML_PATH])
+
         thread = threading.Thread(target=self._start_minikube_tunnel, daemon=True)
         thread.start()
+
         time.sleep(1)
 
     def _start_minikube_tunnel(self):

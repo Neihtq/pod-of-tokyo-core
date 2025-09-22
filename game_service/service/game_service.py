@@ -208,8 +208,8 @@ class GameService:
                 self.send_player_update(player_update, pod.player_id)
                 self.notify_all(f"{pod.name} charged {amount} energy.")
             elif amount >= 3:
-                print(key, num_dices, amount), num_dices, amount
-                score = int(key) + num_dices - amount
+                print(key, num_dices, amount)
+                score = int(key) + min(0, num_dices - 3) * int(key)
                 pod.update_score(score=score)
                 player_update = UpdateEvent(location=location, score=score)
                 self.send_player_update(player_update, pod.player_id)
@@ -233,7 +233,10 @@ class GameService:
 
             pod = self.players[p_id]
             health, _, _, p_location = pod.get_state()
-            if self.locations[p_location] == location:
+            if self.locations[p_location] == location or (
+                self.is_in_tokyo(location=location)
+                and self.is_in_tokyo(location_key=p_location)
+            ):
                 continue
 
             pod.slap(damage)
