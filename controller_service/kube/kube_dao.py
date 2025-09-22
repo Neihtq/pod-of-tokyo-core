@@ -116,7 +116,22 @@ class KubeDao:
                             client.V1EnvVar(
                                 name="SERVICE_PORT", value=str(service_port)
                             ),
+                            client.V1EnvVar(name="HEALTHY", value="true"),
                         ],
+                        liveness_probe=client.V1Probe(
+                            http_get=client.V1HTTPGetAction(
+                                path="/healthz", port=service_port
+                            ),
+                            initial_delay_seconds=3,
+                            period_seconds=3,
+                        ),
+                        readiness_probe=client.V1Probe(
+                            http_get=client.V1HTTPGetAction(
+                                path="/healthz", port=service_port
+                            ),
+                            initial_delay_seconds=3,
+                            period_seconds=3,
+                        ),
                     )
                 ],
                 node_name="minikube",
@@ -151,6 +166,22 @@ class KubeDao:
             name=f"{pod_name}-state-service", namespace=namespace
         )
 
+    def kill_pod(self, pod_name, namespace):
+        self.v1.patch_namespaced_pod(
+            name=pod_name,
+            namespace=namespace,
+            body={
+                "spec": {
+                    "containers": [
+                        {
+                            "name": pod_name,
+                            "env": [{"name": "HEALTHY", "value": "false"}],
+                        }
+                    ]
+                }
+            },
+        )
+
     def get_pod(self, pod_name, namespace):
         pod = self.v1.read_namespaced_pod(name=pod_name, namespace=namespace)
         return pod
@@ -178,6 +209,8 @@ class KubeDao:
                     for vm in (c.volume_mounts or [])
                     if not vm.name.startswith("kube-api-access")
                 ],
+                liveness_probe=c.liveness_probe,
+                readiness_probe=c.readiness_probe,
             )
             containers.append(clean_c)
 

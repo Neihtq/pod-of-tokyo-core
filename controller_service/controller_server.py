@@ -162,7 +162,7 @@ class ControllerServer:
             player_location = data.get("location")
 
             pod_name = self.players_by_id[player_id][0]
-            self.kube_dao.delete_pod(pod_name, player_location)
+            self.kube_dao.kill_pod(pod_name, player_location)
             return jsonify({"status": "success"})
 
         @self.app.route("/getNodeState", methods=["POST"])

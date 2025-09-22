@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, jsonify, request
 from monster_db.monster_db_dao import MonsterDbDao
 
@@ -6,10 +8,18 @@ class StateServer:
     def __init__(self):
         self.app = Flask(__name__)
         self.monster_db_dao = MonsterDbDao()
+        self.healthy = os.environ["HEALTHY"].lower() == "true"
 
         @self.app.route("/")
         def ping():
             return "Alive"
+
+        @self.app.route("/healthz")
+        def healthz():
+            if self.healthy:
+                return "OK", 200
+            else:
+                return "FAIL", 500
 
         @self.app.route("/slap", methods=["POST"])
         def slap():
