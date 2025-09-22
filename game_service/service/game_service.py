@@ -195,6 +195,7 @@ class GameService:
         return dices_to_keep
 
     def resolve_dices(self, pod, dices, location):
+        self.notify_all(f"{pod.name} is resolving their dices: {dices}")
         counter = Counter(dices)
         for key in counter:
             amount = counter[key]
@@ -291,10 +292,10 @@ class GameService:
         self.socketio.emit(MessageType.DEATH.value, {}, to=player_id)
 
     def notify_all(self, message):
-        time.sleep(0.5)
         game_state = self.get_game_state().to_dict()
         payload = {"message": message, "gameState": game_state}
         self.socketio.emit(MessageType.EVENT.value, payload, to=ROOM)
+        time.sleep(0.5)
 
     def notify_all_game_start(self):
         self.socketio.emit(MessageType.START_GAME.value, {}, to=ROOM)
