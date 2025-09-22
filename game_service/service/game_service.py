@@ -186,6 +186,9 @@ class GameService:
             num_throws = num_throws - len(chosen_dices)
             throw_count += 1
 
+        if len(dices_to_keep) <= 6:
+            dices_to_keep.extend(dices)
+
         return dices_to_keep
 
     def resolve_dices(self, pod, dices, location):
@@ -193,7 +196,9 @@ class GameService:
         counter = Counter(dices)
         for key in counter:
             amount = counter[key]
-            if key == DiceSymbols.HEART.value and self.is_in_tokyo(location=location):
+            if key == DiceSymbols.HEART.value and not self.is_in_tokyo(
+                location=location
+            ):
                 self.heal_player(pod, amount, location)
             elif key == DiceSymbols.FIST.value:
                 self.slap(pod, location, damage=amount)
@@ -203,6 +208,7 @@ class GameService:
                 self.send_player_update(player_update, pod.player_id)
                 self.notify_all(f"{pod.name} charged {amount} energy.")
             elif amount >= 3:
+                print(key, num_dices, amount), num_dices, amount
                 score = int(key) + num_dices - amount
                 pod.update_score(score=score)
                 player_update = UpdateEvent(location=location, score=score)
@@ -277,6 +283,7 @@ class GameService:
         self.socketio.emit(MessageType.DEATH.value, {}, to=player_id)
 
     def notify_all(self, message):
+        time.sleep(0.5)
         game_state = self.get_game_state().to_dict()
         payload = {"message": message, "gameState": game_state}
         self.socketio.emit(MessageType.EVENT.value, payload, to=ROOM)
