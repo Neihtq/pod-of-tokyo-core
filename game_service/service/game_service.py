@@ -171,10 +171,10 @@ class GameService:
 
     def reroll_dices(self, pod: PodClient):
         self.call_and_wait(MessageType.ROLL, pod.player_id)
-        num_throws = 6
+        num_dices = num_throws = 6
         throw_count = 0
-        dices_to_keep = []
         max_num_throws = 3
+        dices_to_keep = []
         while throw_count < max_num_throws and num_throws > 0:
             dices = roll_dices(num_throws)
             self.notify_all(f"{pod.name} threw the dices! {dices}")
@@ -188,13 +188,13 @@ class GameService:
             num_throws = num_throws - len(chosen_dices)
             throw_count += 1
 
-        if len(dices_to_keep) < 6:
-            dices_to_keep.extend(dices)
+        if len(dices_to_keep) < num_dices:
+            remaining_dices = list((Counter(chosen_dices) - Counter(dices)).elements())
+            dices_to_keep.extend(remaining_dices)
 
         return dices_to_keep
 
     def resolve_dices(self, pod, dices, location):
-        num_dices = 6
         counter = Counter(dices)
         for key in counter:
             amount = counter[key]
