@@ -107,9 +107,11 @@ class GameService:
         _, score, _, location_key = pod.get_state()
 
         location = self.locations[location_key]
-        if not self.is_in_tokyo(location_key):
-            score = self.fill_empty_space(pod, score)
-        elif self.is_in_tokyo(location_key):
+        if not self.is_in_tokyo(location_key=location_key):
+            score, location_key = self.fill_empty_space(pod, score)
+            if location_key:
+                location = self.locations[location_key]
+        else:
             pod.update_score(2)
             score += 2
             player_update = UpdateEvent(location=location, score=2)
@@ -123,15 +125,16 @@ class GameService:
         self.resolve_dices(pod, dices, location)
 
         if location == Location.OUTSIDE:
-            score = self.fill_empty_space(pod, score)
+            score, _ = self.fill_empty_space(pod, score)
 
         self.check_winner(pod, score)
 
-    def is_in_tokyo(self, location_key):
-        return (
-            self.locations[location_key] == Location.CITY
-            or self.locations[location_key] == Location.BAY
-        )
+    def is_in_tokyo(self, location_key=None, location=None):
+        tokyo_locations = {Location.CITY, Location.BAY}
+        if location_key:
+            return self.locations[location_key] in tokyo_locations
+
+        return location in tokyo_locations
 
     def fill_empty_space(self, pod, score):
         node_state = self.controller.get_node_state()
@@ -151,7 +154,7 @@ class GameService:
             self.send_player_update(player_update, pod.player_id)
             self.notify_all(f"{pod.name} received 1 star!")
 
-        return score
+        return score, location_key
 
     def check_winner(self, pod, score):
         is_winner = score == WINNING_CONDITION or (
@@ -186,36 +189,36 @@ class GameService:
         return dices_to_keep
 
     def resolve_dices(self, pod, dices, location):
+        num_dices = 6
         counter = Counter(dices)
         for key in counter:
             amount = counter[key]
-            if key == DiceSymbols.HEART.value:
-                pod.heal(health=amount)
-                player_update = UpdateEvent(location=location, health=amount)
-                self.send_player_update(player_update, pod.player_id)
-                self.notify_all(f"{pod.name} healed {amount} life points.")
-            if key == DiceSymbols.FIST.value:
+            if key == DiceSymbols.HEART.value and self.is_in_tokyo(location=location):
+                self.heal_player(pod, amount, location)
+            elif key == DiceSymbols.FIST.value:
                 self.slap(pod, location, damage=amount)
-            if key == DiceSymbols.THUNDER.value:
+            elif key == DiceSymbols.THUNDER.value:
                 pod.charge_energy(energy=amount)
                 player_update = UpdateEvent(location=location, energy=amount)
                 self.send_player_update(player_update, pod.player_id)
                 self.notify_all(f"{pod.name} charged {amount} energy.")
+            elif amount >= 3:
+                score = int(key) + num_dices - amount
+                pod.update_score(score=score)
+                player_update = UpdateEvent(location=location, score=score)
+                self.send_player_update(player_update, pod.player_id)
+                msg_suffix = "star" if score == 1 else "stars"
+                message = f"{pod.name} received {score} {msg_suffix}!"
+                self.notify_all(message)
 
-        num_counter = 0
-        score = 0
-        score_threshold = 3
-        for num in [DiceSymbols.ONE, DiceSymbols.TWO, DiceSymbols.THREE]:
-            if num.value in counter:
-                num_counter += counter[num.value]
-                score += int(num.value) * counter[num.value]  # type:ignore
-        if num_counter >= score_threshold:
-            pod.update_score(score=score)
-            player_update = UpdateEvent(location=location, score=score)
+    def heal_player(self, pod, amount, location):
+        health, _, _, _ = pod.get_state()
+        if health < 10:
+            amount = min(amount, 10 - health)
+            pod.heal(health=amount)
+            player_update = UpdateEvent(location=location, health=amount)
             self.send_player_update(player_update, pod.player_id)
-            msg_suffix = "star" if score == 1 else "stars"
-            message = f"{pod.name} received {score} {msg_suffix}!"
-            self.notify_all(message)
+            self.notify_all(f"{pod.name} healed {amount} life points.")
 
     def slap(self, active_pod, location, damage):
         for p_id in self.player_order:
@@ -251,7 +254,7 @@ class GameService:
                         player_update = UpdateEvent(location=Location.OUTSIDE)
                         self.send_player_update(player_update, player_at_bay)
                         self.notify_all(f"{pod_at_bay.name} left Tokyo!")
-            elif self.is_in_tokyo(p_location):
+            elif self.is_in_tokyo(location_key=p_location):
                 response = self.call_and_wait(MessageType.YIELD, p_id)
                 if response["isYielding"]:
                     self.controller.relocate(p_id, p_location, OUTSIDE_KEY)
@@ -259,8 +262,10 @@ class GameService:
                     self.send_player_update(player_update, p_id)
                     self.notify_all(f"{pod.name} left Tokyo!")
 
+            time.sleep(0.5)
+
     def call_and_wait(self, command: MessageType, player_id: str, payload={}):
-        return self.socketio.call(command.value, payload, to=player_id, timeout=60)[
+        return self.socketio.call(command.value, payload, to=player_id, timeout=600)[
             "response"
         ]
 

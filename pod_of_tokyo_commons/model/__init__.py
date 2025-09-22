@@ -1,3 +1,4 @@
 from pod_of_tokyo_commons.model.location import Location
 from pod_of_tokyo_commons.model.message_type import MessageType
 from pod_of_tokyo_commons.model.pod_status import PodStatus
+from pod_of_tokyo_commons.model.update_event import UpdateEvent

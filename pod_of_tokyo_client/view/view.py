@@ -55,10 +55,9 @@ class PodOfTokyoView(App):
     def compose_player_stats(self):
         player_stats_container = self.query_one(f"#{PLAYER_STATS_BOX_ID}")
         player_stats_container.remove_children()
-        statics = [
-            Static(f"{stat}: {value}")
-            for stat, value in self.model.player_stats.items()
-        ]
+        statics = [Static(self.model.player_name)]
+        for stat, value in self.model.player_stats.items():
+            statics.append(Static(f"{stat}: {value}"))
         player_stats_container.mount(Vertical(*statics))
 
     def compose_box(self, title):

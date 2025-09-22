@@ -9,4 +9,4 @@ if __name__ == "__main__":
     DB_NAME = os.environ["DB_PASSWORD"]
 
     server = ControllerServer()
-    server.app.run(host="0.0.0.0", port=11000, debug=True)
+    server.app.run(host="0.0.0.0", port=11000, debug=True, use_reloader=False)
