@@ -63,7 +63,7 @@ class Controller:
         elif message_type == MessageType.UPDATE:
             self.model.update_player_stats(message.player_update)
         elif message_type == MessageType.DEATH:
-            self.model.alive = False
+            self.model.update_alive_status(is_alive=False)
             self.view.compose_menu(DisabledView)
         else:
             response = await self.handle_interactive_message(message_type, message)
