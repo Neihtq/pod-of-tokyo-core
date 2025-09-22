@@ -13,8 +13,8 @@ class PodClient:
     def heal(self, health):
         return http.post(self.base_url, "heal", {"health": health})
 
-    def update_score(self, points):
-        return http.post(self.base_url, "updateScore", {"points": points})
+    def update_score(self, score):
+        return http.post(self.base_url, "updateScore", {"points": score})
 
     def charge_energy(self, energy):
         return http.post(self.base_url, "chargeEnergy", {"energy": energy})
