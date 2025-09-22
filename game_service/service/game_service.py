@@ -79,6 +79,7 @@ class GameService:
             location: key_to_location_map[location]
             for location in game_data["locations"]
         }
+        self.tokyo_bay_destroyed = self.num_players_alive
         self.notify_all_game_start()
         self.wait_for_game_ready()
         self.notify_all("Game started!")
@@ -270,7 +271,7 @@ class GameService:
                 self.notify_player_death(p_id)
                 self.notify_all(f"{pod.name} died!")
 
-                if self.num_players_alive <= 4:
+                if self.num_players_alive <= 4 and not self.tokyo_bay_destroyed:
                     self.destroy_tokyo_bay()
 
             elif self.is_in_tokyo(location_key=p_location):
@@ -286,6 +287,7 @@ class GameService:
     def destroy_tokyo_bay(self):
         player_at_bay = self.controller.destroy_tokyo_bay()["playerId"]
         self.notify_all(f"Tokyo Bay has been flooded!")
+        self.tokyo_bay_destroyed = True
         if player_at_bay:
             pod_at_bay = self.players[player_at_bay]
             self.notify_all(f"{pod_at_bay.name} is leaving Tokyo!")
