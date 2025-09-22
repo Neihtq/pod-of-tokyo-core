@@ -24,6 +24,7 @@ class GameService:
         self.controller = ControllerClient(base_url=controller_url)
         self.winner = None
         self.num_players_alive = 0
+        self.turn = 0
 
     def get_game_state(self):
         game_state = defaultdict(list)
@@ -186,7 +187,7 @@ class GameService:
             num_throws = num_throws - len(chosen_dices)
             throw_count += 1
 
-        if len(dices_to_keep) <= 6:
+        if len(dices_to_keep) < 6:
             dices_to_keep.extend(dices)
 
         return dices_to_keep
@@ -209,7 +210,7 @@ class GameService:
                 self.notify_all(f"{pod.name} charged {amount} energy.")
             elif amount >= 3:
                 print(key, num_dices, amount)
-                score = int(key) + min(0, num_dices - 3) * int(key)
+                score = int(key) + min(0, amount - 3) * int(key)
                 pod.update_score(score=score)
                 player_update = UpdateEvent(location=location, score=score)
                 self.send_player_update(player_update, pod.player_id)
@@ -227,6 +228,10 @@ class GameService:
             self.notify_all(f"{pod.name} healed {amount} life points.")
 
     def slap(self, active_pod, location, damage):
+        if self.turn == 0:
+            self.notify_all(f"The beginning play cannot slap on their first turn!")
+            return
+
         for p_id in self.player_order:
             if p_id in self.dead or p_id == active_pod.player_id:
                 continue
