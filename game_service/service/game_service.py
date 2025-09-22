@@ -275,9 +275,9 @@ class GameService:
                 response = self.call_and_wait(MessageType.YIELD, p_id)
                 if response["isYielding"]:
                     self.controller.relocate(p_id, p_location, OUTSIDE_KEY)
+                    self.notify_all(f"{pod.name} is leaving Tokyo!")
                     player_update = UpdateEvent(location=Location.OUTSIDE)
                     self.send_player_update(player_update, p_id)
-                    self.notify_all(f"{pod.name} left Tokyo!")
 
             time.sleep(0.5)
 
