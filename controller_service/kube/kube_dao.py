@@ -78,7 +78,7 @@ class KubeDao:
             namespace = pod.metadata.namespace
             pods_by_namespaces[namespace].append(pod.metadata.name)
 
-        return pod.metadata.namespace, pod.metadata.name
+        return pods_by_namespaces
 
     def create_pod(
         self,
