@@ -35,6 +35,9 @@ class ControllerServer:
         @self.app.route("/getFleetStatus", methods=["POST"])
         def get_fleet_status():
             pod_by_namespace = self.kube_dao.list_all_pods()
+            postgres_namespace, postgres_pod_name = self.kube_dao.get_postgres_pod()
+            pod_by_namespace[postgres_namespace] = [postgres_pod_name]
+
             fleet_status = []
             for namespace, pods in pod_by_namespace.items():
                 for pod_name in pods:
