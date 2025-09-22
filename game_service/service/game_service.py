@@ -199,9 +199,7 @@ class GameService:
         counter = Counter(dices)
         for key in counter:
             amount = counter[key]
-            if key == DiceSymbols.HEART.value and not self.is_in_tokyo(
-                location=location
-            ):
+            if key == DiceSymbols.HEART.value:
                 self.heal_player(pod, amount, location)
             elif key == DiceSymbols.FIST.value:
                 self.slap(pod, location, damage=amount)
@@ -220,6 +218,11 @@ class GameService:
                 self.notify_all(message)
 
     def heal_player(self, pod, amount, location):
+        if self.is_in_tokyo(location=location):
+            self.notify_all(
+                f"{pod.player_name} is in Tokyo! Healing in Tokyo is not possible!"
+            )
+            return
         health, _, _, _ = pod.get_state()
         if health < 10:
             amount = min(amount, 10 - health)
