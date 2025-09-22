@@ -209,8 +209,7 @@ class GameService:
                 self.send_player_update(player_update, pod.player_id)
                 self.notify_all(f"{pod.name} charged {amount} energy.")
             elif amount >= 3:
-                print(key, num_dices, amount)
-                score = int(key) + min(0, amount - 3) * int(key)
+                score = int(key) + max(0, amount - 3) * int(key)
                 pod.update_score(score=score)
                 player_update = UpdateEvent(location=location, score=score)
                 self.send_player_update(player_update, pod.player_id)
