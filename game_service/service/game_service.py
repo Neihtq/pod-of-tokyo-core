@@ -188,10 +188,14 @@ class GameService:
             num_throws = num_throws - len(chosen_dices)
             throw_count += 1
 
+        print(f"chosen: {chosen_dices}")
+        print(f"thrown: {dices}")
         if len(dices_to_keep) < num_dices:
-            remaining_dices = list((Counter(chosen_dices) - Counter(dices)).elements())
+            remaining_dices = list((Counter(dices) - Counter(chosen_dices)).elements())
+            print(remaining_dices)
             dices_to_keep.extend(remaining_dices)
 
+        print(f"to keep: {dices_to_keep}")
         return dices_to_keep
 
     def resolve_dices(self, pod, dices, location):
@@ -220,7 +224,7 @@ class GameService:
     def heal_player(self, pod, amount, location):
         if self.is_in_tokyo(location=location):
             self.notify_all(
-                f"{pod.player_name} is in Tokyo! Healing in Tokyo is not possible!"
+                f"{pod.name} is in Tokyo! Healing in Tokyo is not possible!"
             )
             return
         health, _, _, _ = pod.get_state()
@@ -304,7 +308,7 @@ class GameService:
         game_state = self.get_game_state().to_dict()
         payload = {"message": message, "gameState": game_state}
         self.socketio.emit(MessageType.EVENT.value, payload, to=ROOM)
-        time.sleep(1.5)
+        time.sleep(1.0)
 
     def notify_all_game_start(self):
         self.socketio.emit(MessageType.START_GAME.value, {}, to=ROOM)
