@@ -25,4 +25,14 @@ class Model:
         self.player_stats["Score"] += player_update.score
         self.player_stats["Energy"] += player_update.energy
         self.player_stats["Location"] = player_update.location
+
+        self.player_stats["Health"] = max(0, self.player_stats["Health"])
+
+        self.view.compose_player_stats()
+
+    def update_alive_status(self, is_alive):
+        self.alive = is_alive
+        if not self.alive:
+            self.player_stats["Location"] = "Heaven"
+
         self.view.compose_player_stats()
