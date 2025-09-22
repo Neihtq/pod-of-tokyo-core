@@ -64,7 +64,7 @@ class GameService:
                 base_url=p["podUrl"], name=p["name"], player_id=p["playerId"]
             )
             self.player_order.append(player_id)
-            update = UpdateEvent(location=Location.OUTSIDE)
+            update = UpdateEvent(location=Location.OUTSIDE, health=10)
             self.send_player_update(player_update=update, player_id=player_id)
 
         self.num_players_alive = len(self.player_order)
@@ -95,6 +95,7 @@ class GameService:
             self.notify_all(f"It's {name}'s turn.")
             self.start_turn(player_id)
             idx = (idx + 1) % len(self.player_order)
+            self.notify_turn_end((player_id))
 
         self.notify_all(f"{self.winner.name} is King of Tokyo!")
         self.controller.destroy_all()
@@ -278,14 +279,17 @@ class GameService:
     def notify_all_game_start(self):
         self.socketio.emit(MessageType.START_GAME.value, {}, to=ROOM)
 
+    def notify_turn_end(self, player_id):
+        self.socketio.emit(MessageType.END_TURN.value, {}, to=player_id)
+
     def decide_starter(self):
         players = self.player_order.copy()
         winners = []
         max_score = 0
+        self.notify_all("Determining who starts...")
         while len(winners) != 1:
             winners = []
             max_score = 0
-            self.notify_all("Determining who starts...")
             for player_id in players:
                 dices = roll_dices(6)
                 num_fists = Counter(dices)[DiceSymbols.FIST.value]
@@ -294,7 +298,6 @@ class GameService:
                     winners = [player_id]
                 elif num_fists == max_score:
                     winners.append(player_id)
-                time.sleep(1)
 
             players = winners.copy()
 

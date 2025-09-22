@@ -53,7 +53,10 @@ class Controller:
         response = None
         if message_type == MessageType.LOBBY:
             self.update_lobby(message.members)
-        elif message_type == MessageType.START_GAME:
+        elif (
+            message_type == MessageType.START_GAME
+            or message_type == MessageType.END_TURN
+        ):
             self.view.compose_menu(DisabledView)
         elif message_type == MessageType.EVENT:
             self.update_events(message.message)
