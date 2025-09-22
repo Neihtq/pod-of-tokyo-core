@@ -69,10 +69,14 @@ class KubeDao:
 
         return pods_by_namespaces
 
-    def get_postgres_pod(self):
-        pod = self.v1.list_namespaced_pod(
+    def get_postgres_pods(self):
+        pods = self.v1.list_namespaced_pod(
             namespace="default", label_selector="app=postgres"
         )
+        pods_by_namespaces = defaultdict(list)
+        for pod in pods.items:
+            namespace = pod.metadata.namespace
+            pods_by_namespaces[namespace].append(pod.metadata.name)
 
         return pod.metadata.namespace, pod.metadata.name
 

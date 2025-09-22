@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from flask import Flask, jsonify, request
 
 from controller_service.kube.kube_dao import KubeDao
@@ -34,9 +36,9 @@ class ControllerServer:
 
         @self.app.route("/getFleetStatus", methods=["POST"])
         def get_fleet_status():
-            pod_by_namespace = self.kube_dao.list_all_pods()
-            postgres_namespace, postgres_pod_name = self.kube_dao.get_postgres_pod()
-            pod_by_namespace[postgres_namespace] = [postgres_pod_name]
+            player_pods = self.kube_dao.list_all_pods()
+            postgres_pods = self.kube_dao.get_postgres_pods()
+            pod_by_namespace = defaultdict(list, {**player_pods, **postgres_pods})
 
             fleet_status = []
             for namespace, pods in pod_by_namespace.items():
