@@ -116,7 +116,6 @@ class KubeDao:
                             client.V1EnvVar(
                                 name="SERVICE_PORT", value=str(service_port)
                             ),
-                            client.V1EnvVar(name="HEALTHY", value="true"),
                         ],
                         liveness_probe=client.V1Probe(
                             http_get=client.V1HTTPGetAction(
@@ -164,22 +163,6 @@ class KubeDao:
         self.v1.delete_namespaced_pod(name=pod_name, namespace=namespace)
         self.v1.delete_namespaced_service(
             name=f"{pod_name}-state-service", namespace=namespace
-        )
-
-    def kill_pod(self, pod_name, namespace):
-        self.v1.patch_namespaced_pod(
-            name=pod_name,
-            namespace=namespace,
-            body={
-                "spec": {
-                    "containers": [
-                        {
-                            "name": pod_name,
-                            "env": [{"name": "HEALTHY", "value": "false"}],
-                        }
-                    ]
-                }
-            },
         )
 
     def get_pod(self, pod_name, namespace):

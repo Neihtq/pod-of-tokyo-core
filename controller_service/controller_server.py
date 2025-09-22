@@ -168,7 +168,11 @@ class ControllerServer:
                 target_namespace=OUTSIDE_KEY,
                 service_port=self.players_by_id[player_id][-1],
             )
-            self.kube_dao.kill_pod(pod_name, player_location)
+
+            url = self.players_by_id[player_id][1]
+            pod_client.update_monster_location(url=url, location=OUTSIDE_KEY)
+            pod_client.set_unhealthy(url=url)
+
             return jsonify({"status": "success"})
 
         @self.app.route("/getNodeState", methods=["POST"])
