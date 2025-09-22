@@ -104,6 +104,7 @@ class Controller:
 
     async def resolve_dices(self, dices):
         self.view.compose_menu(DisabledView)
+        print(dices)
         await self.push_response_to_queue({"dices": dices})
 
     async def yielding(self, is_yielding):

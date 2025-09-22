@@ -293,9 +293,11 @@ class GameService:
             self.send_player_update(player_update, player_at_bay)
 
     def call_and_wait(self, command: MessageType, player_id: str, payload={}):
-        return self.socketio.call(command.value, payload, to=player_id, timeout=600)[
-            "response"
-        ]
+        response = self.socketio.call(
+            command.value, payload, to=player_id, timeout=600
+        )["response"]
+        print(f"Response: {response}")
+        return response
 
     def send_player_update(self, player_update, player_id):
         payload = {"update": player_update.to_dict()}
