@@ -103,7 +103,11 @@ class ControllerServer:
         @self.app.route("/destroyTokyoBay", methods=["POST"])
         def destroy_tokyo_bay():
             pods_by_namespaces = self.kube_dao.list_all_pods()
-            pod_in_bay = pods_by_namespaces[TOKYO_BAY_KEY][0]
+            pods_in_bay = pods_by_namespaces[TOKYO_BAY_KEY]
+            if not pods_in_bay:
+                return jsonify({"playerId": None})
+
+            pod_in_bay = pods_in_bay[0]
             player_id = self.player_ids_by_name[pod_in_bay]
 
             self.kube_dao.move_pod(
@@ -162,16 +166,12 @@ class ControllerServer:
             player_location = data.get("location")
 
             pod_name = self.players_by_id[player_id][0]
-            self.kube_dao.move_pod(
-                pod_name,
-                from_namespace=player_location,
-                target_namespace=OUTSIDE_KEY,
+            self.kube_dao.kill_pod(
+                player_id=player_id,
+                pod_name=pod_name,
+                namespace=player_location,
                 service_port=self.players_by_id[player_id][-1],
             )
-
-            url = self.players_by_id[player_id][1]
-            pod_client.update_monster_location(url=url, location=OUTSIDE_KEY)
-            pod_client.set_unhealthy(url=url)
 
             return jsonify({"status": "success"})
 

@@ -5,7 +5,3 @@ def update_monster_location(url, location):
     return http.post(
         base_url=url, endpoint="updateLocation", payload={"location": location}
     )
-
-
-def set_unhealthy(url):
-    return http.post(base_url=url, endpoint="setUnhealthy")

@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
-from pod_of_tokyo_commons.constants import MONSTER_NAMES_SET
+from pod_of_tokyo_commons.constants import MONSTER_NAMES_SET, OUTSIDE_KEY
 
 load_dotenv()
 
@@ -116,6 +116,7 @@ class KubeDao:
                             client.V1EnvVar(
                                 name="SERVICE_PORT", value=str(service_port)
                             ),
+                            client.V1EnvVar(name="HEALTHY", value="true"),
                         ],
                         liveness_probe=client.V1Probe(
                             http_get=client.V1HTTPGetAction(
@@ -214,6 +215,59 @@ class KubeDao:
         self.expose_pod_port(pod_name, target_namespace, service_port)
         self.wait_for_pod_ready(pod_name, target_namespace)
         time.sleep(1)
+
+    def kill_pod(self, player_id, pod_name, namespace, service_port):
+        pod = self.get_pod(pod_name, namespace)
+        self.delete_pod(pod_name, namespace)
+        self.wait_for_pod_deletion(pod_name, namespace)
+
+        containers = []
+        for c in pod.spec.containers:
+            clean_c = client.V1Container(
+                name=c.name,
+                image=c.image,
+                ports=c.ports,
+                env=[
+                    client.V1EnvVar(name="DB_NAME", value=os.environ["DB_NAME"]),
+                    client.V1EnvVar(name="DB_USER", value=os.environ["DB_USER"]),
+                    client.V1EnvVar(
+                        name="DB_PASSWORD", value=os.environ["DB_PASSWORD"]
+                    ),
+                    client.V1EnvVar(name="DB_HOST", value=DB_HOST),
+                    client.V1EnvVar(name="DB_PORT", value=DB_PORT),
+                    client.V1EnvVar(name="PLAYER_ID", value=player_id),
+                    client.V1EnvVar(name="MONSTER_NAME", value=pod_name),
+                    client.V1EnvVar(name="SERVICE_PORT", value=str(service_port)),
+                    client.V1EnvVar(name="HEALTHY", value="false"),
+                ],
+                command=c.command,
+                args=c.args,
+                resources=c.resources,
+                volume_mounts=[
+                    vm
+                    for vm in (c.volume_mounts or [])
+                    if not vm.name.startswith("kube-api-access")
+                ],
+                liveness_probe=c.liveness_probe,
+                readiness_probe=c.readiness_probe,
+            )
+            containers.append(clean_c)
+
+        pod_manifest = client.V1Pod(
+            metadata=client.V1ObjectMeta(name=pod_name, labels=pod.metadata.labels),
+            spec=client.V1PodSpec(
+                containers=containers,
+                volumes=[
+                    v
+                    for v in (pod.spec.volumes or [])
+                    if not v.name.startswith("kube-api-access")
+                ],
+            ),
+        )
+
+        print(f"Recreating pod '{pod_name}' but dead")
+        self.v1.create_namespaced_pod(namespace=OUTSIDE_KEY, body=pod_manifest)
+        self.expose_pod_port(pod_name, OUTSIDE_KEY, service_port)
 
     def get_ip(self):
         return subprocess.check_output(["minikube", "ip"], text=True).strip()
