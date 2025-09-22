@@ -147,8 +147,8 @@ class GameService:
 
         if location_key:
             location = self.locations[location_key]
+            self.notify_all(f"{pod.name} enters {location.value}!")
             self.controller.relocate(pod.player_id, OUTSIDE_KEY, location_key)
-            self.notify_all(f"{pod.name} has conquered {location.value}!")
             pod.update_score(1)
             score += 1
             player_update = UpdateEvent(location=location, score=1)

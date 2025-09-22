@@ -97,7 +97,9 @@ class ControllerServer:
 
         @self.app.route("/destroyTokyoBay", methods=["POST"])
         def destroy_tokyo_bay():
+            print("Receive request to destroy Tokyo Bay")
             pods_by_namespaces = self.kube_dao.list_all_pods()
+            print(pods_by_namespaces)
             pod_in_bay = pods_by_namespaces[TOKYO_BAY_KEY][0]
             player_id = self.player_ids_by_name[pod_in_bay]
 
