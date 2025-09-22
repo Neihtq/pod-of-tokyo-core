@@ -230,7 +230,9 @@ class GameService:
 
     def slap(self, active_pod, location, damage):
         if self.turn == 0:
-            self.notify_all(f"The beginning play cannot slap on their first turn!")
+            self.notify_all(
+                f"The beginning player cannot slap other players on their first turn!"
+            )
             return
 
         for p_id in self.player_order:
