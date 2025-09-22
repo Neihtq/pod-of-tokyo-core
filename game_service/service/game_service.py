@@ -97,6 +97,7 @@ class GameService:
             self.start_turn(player_id)
             idx = (idx + 1) % len(self.player_order)
             self.notify_turn_end((player_id))
+            self.turn += 1
 
         self.notify_all(f"{self.winner.name} is King of Tokyo!")
         self.controller.destroy_all()
