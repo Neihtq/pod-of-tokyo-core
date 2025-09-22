@@ -50,7 +50,7 @@ class GameService:
             time.sleep(5)
 
     def start_game(self):
-        print("Starting game.")
+        self.notify_all("Initializing game...")
         game_data = self.controller.init_game(
             [
                 {player_id: player_name}
@@ -163,7 +163,8 @@ class GameService:
 
         return is_winner
 
-    def reroll_dices(self, pod):
+    def reroll_dices(self, pod: PodClient):
+        self.call_and_wait(MessageType.ROLL, pod.player_id)
         num_throws = 6
         throw_count = 0
         dices_to_keep = []
@@ -175,7 +176,7 @@ class GameService:
             response = self.call_and_wait(
                 MessageType.REROLL_AND_RESOLVE, pod.player_id, {"dices": dices}
             )
-            chosen_dices = response["dicesToKeep"]
+            chosen_dices = response["dices"]
             dices_to_keep.extend(chosen_dices)
             self.notify_all(f"{pod.name} kept {dices_to_keep}")
             num_throws = num_throws - len(chosen_dices)
@@ -188,7 +189,7 @@ class GameService:
         for key in counter:
             amount = counter[key]
             if key == DiceSymbols.HEART.value:
-                pod.heal(life=amount)
+                pod.heal(health=amount)
                 player_update = UpdateEvent(location=location, health=amount)
                 self.send_player_update(player_update, pod.player_id)
                 self.notify_all(f"{pod.name} healed {amount} life points.")
@@ -251,14 +252,16 @@ class GameService:
                         self.notify_all(f"{pod_at_bay.name} left Tokyo!")
             elif self.is_in_tokyo(p_location):
                 response = self.call_and_wait(MessageType.YIELD, p_id)
-                if response["yield"]:
+                if response["isYielding"]:
                     self.controller.relocate(p_id, p_location, OUTSIDE_KEY)
                     player_update = UpdateEvent(location=Location.OUTSIDE)
                     self.send_player_update(player_update, p_id)
                     self.notify_all(f"{pod.name} left Tokyo!")
 
     def call_and_wait(self, command: MessageType, player_id: str, payload={}):
-        return self.socketio.call(command.value, payload, to=player_id, timeout=60)
+        return self.socketio.call(command.value, payload, to=player_id, timeout=60)[
+            "response"
+        ]
 
     def send_player_update(self, player_update, player_id):
         payload = {"update": player_update.to_dict()}

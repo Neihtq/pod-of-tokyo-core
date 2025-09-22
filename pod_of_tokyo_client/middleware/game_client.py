@@ -28,7 +28,7 @@ class GameClient:
 
         @self.sio.on("*")
         async def event_handler(event_name, data):
-            return self._message_handler(event_name, Message(data))
+            return await self._message_handler(event_name, Message(data))
 
     async def connect(self):
         print(f"Connecting to server: {self.server_url}")

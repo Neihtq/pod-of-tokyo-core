@@ -45,11 +45,9 @@ class Controller:
         lobby_view.update_list()
 
     async def push_response_to_queue(self, response):
-        asyncio.run_coroutine_threadsafe(
-            self.res_queue.put(response), asyncio.get_event_loop()
-        )
+        await self.res_queue.put(response)
 
-    def handle_message(self, event_name, message: Message):
+    async def handle_message(self, event_name, message: Message):
         print(f"Received message: event_name={event_name}, message={message}")
         message_type = MessageType(event_name)
         response = None
@@ -65,21 +63,22 @@ class Controller:
             self.model.alive = False
             self.view.compose_menu(DisabledView)
         else:
-            response = self.handle_interactive_message(message_type, message)
+            response = await self.handle_interactive_message(message_type, message)
 
         return {"response": response}
 
-    def handle_interactive_message(self, message_type, message):
+    async def handle_interactive_message(self, message_type, message):
         if message_type == MessageType.ROLL:
             self.model.dices = []
             self.view.compose_menu(Phase1)
         elif message_type == MessageType.REROLL_AND_RESOLVE:
-            self.model.dices.extend(message.dices)
+            self.model.dices = message.dices
             self.view.compose_menu(Phase2)
         elif message_type == MessageType.YIELD:
             self.view.compose_menu(YieldView)
 
-        return self.res_queue.get()
+        response = await self.res_queue.get()
+        return response
 
     def handle_message_call(self, event_name, message):
         message_type = MessageType(event_name)
@@ -97,4 +96,11 @@ class Controller:
         await self.push_response_to_queue("ACK")
 
     async def throw_dices(self):
+        print("sending response to throw dices")
         await self.push_response_to_queue("Throw")
+
+    async def resolve_dices(self, dices):
+        await self.push_response_to_queue({"dices": dices})
+
+    async def yielding(self, is_yielding):
+        await self.push_response_to_queue({"isYielding": is_yielding})

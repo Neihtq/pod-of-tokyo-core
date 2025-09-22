@@ -19,6 +19,8 @@ class YieldView(GreenBorderVertical):
     def on_mount(self) -> None:
         self.focus_element.focus()
 
-    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+    async def on_option_list_option_selected(
+        self, event: OptionList.OptionSelected
+    ) -> None:
         selected_value = event.option.prompt
-        self.controller.is_yielding(selected_value == "Yes")
+        await self.controller.is_yielding(selected_value == "Yes")

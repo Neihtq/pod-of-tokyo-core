@@ -23,9 +23,9 @@ class Phase2(GreenBorderVertical):
         self.focus_element.focus()
 
     @on(Button.Pressed)
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == CONFIRM_BUTTON_ID:
             dices_list = self.query_one(f"#{DICES_LIST_ID}", SelectionList)
             selected_dices_indices = dices_list.selected
             dices = [self.model.dices[i] for i in selected_dices_indices]
-            self.controller.resolve_dices(dices)
+            await self.controller.resolve_dices(dices)

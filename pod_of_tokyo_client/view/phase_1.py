@@ -13,9 +13,10 @@ class Phase1(GreenBorderVertical):
         yield self.focus_element
 
     @on(Button.Pressed)
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == THROW_DICES_BUTTON_ID:
-            self.controller.throw_dices()
+            print("Pressed button to throw dices!")
+            await self.controller.throw_dices()
 
     def on_mount(self) -> None:
         self.focus_element.focus()
