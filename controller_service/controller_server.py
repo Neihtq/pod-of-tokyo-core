@@ -162,6 +162,12 @@ class ControllerServer:
             player_location = data.get("location")
 
             pod_name = self.players_by_id[player_id][0]
+            self.kube_dao.move_pod(
+                pod_name,
+                from_namespace=player_location,
+                target_namespace=OUTSIDE_KEY,
+                service_port=self.players_by_id[player_id][-1],
+            )
             self.kube_dao.kill_pod(pod_name, player_location)
             return jsonify({"status": "success"})
 
