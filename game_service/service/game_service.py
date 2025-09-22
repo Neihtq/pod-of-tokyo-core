@@ -87,6 +87,7 @@ class GameService:
         self.start_game()
         idx = self.decide_starter()
         while not self.winner:
+            print(self.player_order, idx)
             player_id = self.player_order[idx]
             if player_id in self.dead:
                 idx += 1
@@ -99,7 +100,6 @@ class GameService:
             self.notify_turn_end((player_id))
             self.turn += 1
 
-        self.notify_all(f"{self.winner.name} is King of Tokyo!")
         self.controller.destroy_all()
         self.__init__(self.socketio, self.controller.base_url)
 
