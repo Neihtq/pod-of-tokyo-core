@@ -8,11 +8,16 @@ class StateServer:
     def __init__(self):
         self.app = Flask(__name__)
         self.monster_db_dao = MonsterDbDao()
-        self.healthy = os.environ["HEALTHY"].lower() == "true"
+        self.healthy = True
 
         @self.app.route("/")
         def ping():
             return "Alive"
+
+        @self.app.route("/setUnhealthy", methods=["POST"])
+        def set_unhealthy():
+            self.healthy = False
+            return jsonify({"status": "success"})
 
         @self.app.route("/healthz")
         def healthz():
