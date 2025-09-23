@@ -34,7 +34,13 @@ class GameService:
             pod = self.players[p_id]
             health, score, energy, location = pod.get_state()
             game_state[location].append(
-                Player(health=health, score=score, energy=energy, location=location)
+                Player(
+                    health=health,
+                    score=score,
+                    energy=energy,
+                    location=location,
+                    name=pod.name,
+                )
             )
         return GameState(game_state)
 

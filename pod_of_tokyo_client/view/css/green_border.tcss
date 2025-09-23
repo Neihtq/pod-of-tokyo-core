@@ -8,7 +8,7 @@
   text-style: bold;
   color: black;
   content-align: center middle;
-  background: grey
+  background: lightgrey
 }
 
 .heart {
@@ -21,4 +21,27 @@
 
 .thunder {
   color: lightgreen;
+}
+
+.location-key {
+  text-style: bold;
+  color: black;
+  content-align: center middle;
+  background: green;
+}
+
+.game-state-list {
+  align-vertical: top;
+}
+
+.player-box {
+  layout: horizontal; 
+  height: auto;
+  align-vertical: middle;
+  width: 100%;
+}
+
+.player-box Static {
+  width: auto; 
+  padding: 0 1;
 }
