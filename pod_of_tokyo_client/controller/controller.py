@@ -26,6 +26,7 @@ class Controller:
 
     def get_name_handler(self, name):
         self.model.player_name = name
+        self.view.compose_player_stats()
         self.view.compose_menu(LobbyView)
 
     async def connect(self, url):

@@ -3,7 +3,7 @@ from pod_of_tokyo_commons.model import UpdateEvent
 
 class Model:
     def __init__(self):
-        self.player_name = ""
+        self.player_name = "<player-name>"
         self.alive = True
         self.game_state = {}
         self.player_stats = {"Health": 0, "Score": 0, "Energy": 0, "Location": ""}

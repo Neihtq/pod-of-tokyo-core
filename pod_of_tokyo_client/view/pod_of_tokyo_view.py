@@ -1,5 +1,6 @@
+from rich.text import Text
 from textual.app import App
-from textual.containers import Container, Grid, Vertical, VerticalScroll
+from textual.containers import Container, Grid, Horizontal, Vertical, VerticalScroll
 from textual.widgets import Static
 
 from pod_of_tokyo_client.utils.constants import (
@@ -10,6 +11,8 @@ from pod_of_tokyo_client.utils.constants import (
     PLAYER_STATS_BOX_ID,
 )
 from pod_of_tokyo_client.view.player_menus import JoinView
+
+PLAYER_NAME_ID = "player-name"
 
 
 class PodOfTokyoView(App):
@@ -58,9 +61,17 @@ class PodOfTokyoView(App):
     def compose_player_stats(self):
         player_stats_container = self.query_one(f"#{PLAYER_STATS_BOX_ID}")
         player_stats_container.remove_children()
-        statics = [Static(self.model.player_name)]
+
+        stat_symbols = {
+            "Health": ("♥", "heart"),
+            "Score": ("★", "star"),
+            "Energy": ("⚡", "thunder"),
+        }
+        statics = [Static(self.model.player_name, id=PLAYER_NAME_ID)]
         for stat, value in self.model.player_stats.items():
-            statics.append(Static(f"{stat}: {value}"))
+            symbol, css_class = stat_symbols.get(stat, ("", None))
+            static = Static(f"{stat} {symbol}: {value}", classes=css_class)
+            statics.append(static)
         player_stats_container.mount(Vertical(*statics))
 
     def compose_box(self, title):

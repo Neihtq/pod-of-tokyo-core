@@ -3,3 +3,22 @@
   width: 1fr;
   height: 1fr;
 }
+
+#player-name {
+  text-style: bold;
+  color: black;
+  content-align: center middle;
+  background: grey
+}
+
+.heart {
+  color: lightcoral;
+}
+
+.star {
+  color: lightblue;
+}
+
+.thunder {
+  color: lightgreen;
+}
