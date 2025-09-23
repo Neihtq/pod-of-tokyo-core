@@ -62,6 +62,7 @@ class Controller:
         ):
             self.view.compose_menu(DisabledView)
         elif message_type == MessageType.EVENT:
+            self.model.update_game_state(message.game_state)
             self.update_events(message.message)
         elif message_type == MessageType.UPDATE:
             self.model.update_player_stats(message.player_update)

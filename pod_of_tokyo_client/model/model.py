@@ -36,3 +36,7 @@ class Model:
             self.player_stats["Location"] = "Heaven"
 
         self.view.compose_player_stats()
+
+    def update_game_state(self, game_state):
+        self.game_state = game_state
+        self.view.compose_game_state()
