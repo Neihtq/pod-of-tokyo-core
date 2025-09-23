@@ -1,6 +1,6 @@
 from pod_of_tokyo_client.controller.controller import Controller
 from pod_of_tokyo_client.model.model import Model
-from pod_of_tokyo_client.view.view import PodOfTokyoView
+from pod_of_tokyo_client.view import PodOfTokyoView
 
 model = Model()
 controller = Controller(model=model)

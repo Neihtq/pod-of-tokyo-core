@@ -9,10 +9,12 @@ from pod_of_tokyo_client.utils.constants import (
     MENU_CONTENT_ID,
     PLAYER_STATS_BOX_ID,
 )
-from pod_of_tokyo_client.view.join_view import JoinView
+from pod_of_tokyo_client.view.player_menus import JoinView
 
 
 class PodOfTokyoView(App):
+    CSS_PATH = "css/green_border.tcss"
+
     def __init__(self, model, controller):
         super().__init__()
         self.event_logs = []
@@ -25,25 +27,26 @@ class PodOfTokyoView(App):
         grid.styles.grid_size_columns = 2
 
         with grid:
-            player_stats_container = Container(Static("Stats"), id=PLAYER_STATS_BOX_ID)
+            player_stats_container = Container(
+                Static("Stats"), id=PLAYER_STATS_BOX_ID, classes="container"
+            )
             player_stats_container.border_title = "Stats"
-            player_stats_container.styles.border = ("solid", "green")
-            player_stats_container.styles.width = "1fr"
-            player_stats_container.styles.height = "1fr"
             yield player_stats_container
 
             join_view = JoinView(self.model, self.controller, id=MENU_CONTENT_ID)
-            yield Container(join_view, id=MENU_BOX_ID)
+            join_view_container = Container(
+                join_view, id=MENU_BOX_ID, classes="container"
+            )
+            join_view_container.border_title = "Menu"
+            yield join_view_container
 
-            event_logs = VerticalScroll(id=EVENT_LOGS_BOX_ID)
+            event_logs = VerticalScroll(id=EVENT_LOGS_BOX_ID, classes="container")
             event_logs.border_title = "Event Logs"
-            event_logs.styles.border = ("solid", "green")
-            event_logs.styles.width = "1fr"
-            event_logs.styles.height = "1fr"
             yield event_logs
 
-            game_state = self.compose_box(title="Game State")
-            yield Container(game_state, id=GAME_STATE_BOX_ID)
+            game_state = Container(Static(), id=GAME_STATE_BOX_ID, classes="container")
+            game_state.border_title = "Game State"
+            yield game_state
 
     def add_event(self, event):
         event_container = self.query_one(f"#{EVENT_LOGS_BOX_ID}", VerticalScroll)
@@ -63,9 +66,6 @@ class PodOfTokyoView(App):
     def compose_box(self, title):
         static = Static()
         static.border_title = title
-        static.styles.border = ("solid", "green")
-        static.styles.width = "1fr"
-        static.styles.height = "1fr"
         return static
 
     def compose_menu(self, view_class):

@@ -1,0 +1,5 @@
+.container {
+  border: solid green;
+  width: 1fr;
+  height: 1fr;
+}
