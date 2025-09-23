@@ -1,0 +1,1 @@
+from pod_of_tokyo_client.view.pod_of_tokyo_view import PodOfTokyoView

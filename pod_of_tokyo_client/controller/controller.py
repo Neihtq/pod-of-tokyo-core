@@ -2,12 +2,14 @@ import asyncio
 
 from pod_of_tokyo_client.middleware.game_client import GameClient
 from pod_of_tokyo_client.middleware.message import Message
-from pod_of_tokyo_client.view.disabled_view import DisabledView
-from pod_of_tokyo_client.view.lobby_view import LobbyView
-from pod_of_tokyo_client.view.phase_1 import Phase1
-from pod_of_tokyo_client.view.phase_2 import Phase2
-from pod_of_tokyo_client.view.view import PodOfTokyoView
-from pod_of_tokyo_client.view.yield_view import YieldView
+from pod_of_tokyo_client.view import PodOfTokyoView
+from pod_of_tokyo_client.view.player_menus import (
+    DisabledView,
+    LobbyView,
+    Phase1,
+    Phase2,
+    YieldView,
+)
 from pod_of_tokyo_commons.model import MessageType
 
 
@@ -24,6 +26,7 @@ class Controller:
 
     def get_name_handler(self, name):
         self.model.player_name = name
+        self.view.compose_player_stats()
         self.view.compose_menu(LobbyView)
 
     async def connect(self, url):

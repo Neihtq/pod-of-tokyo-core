@@ -1,4 +1,3 @@
-from textual import on
 from textual.app import ComposeResult
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
