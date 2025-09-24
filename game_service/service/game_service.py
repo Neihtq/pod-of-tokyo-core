@@ -116,6 +116,8 @@ class GameService:
             self.notifier.notify_turn_end((player_id))
             self.turn += 1
 
+        self.notifier.notify_game_end(self.winner)
+        self.notifier.notify_all("Resetting game state...")
         self.controller.destroy_all()
         self.__init__(self.socketio, self.controller.base_url)
 
