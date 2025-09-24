@@ -30,9 +30,7 @@ class GameServer:
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
 
         self.connections = {}
-        self.game_service = GameService(
-            self.socketio, f"http://{host}:{controller_port}"
-        )
+        self.game_service = GameService(self.socketio, f"{host}:{controller_port}")
 
         self._register_events()
 
@@ -60,7 +58,7 @@ class GameServer:
         @self.socketio.on("start_game")
         def handle_start_game():
             print("Received message to start game")
-            self.game_service.players = self.connections.copy()
+            self.game_service.player_name_by_id = self.connections.copy()
             self.socketio.start_background_task(self.game_service.game_loop)
 
     def notify_all(self):
