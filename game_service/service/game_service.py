@@ -1,5 +1,5 @@
 import time
-from collections import Counter, defaultdict
+from collections import Counter
 
 from flask_socketio import SocketIO
 from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
@@ -18,10 +18,11 @@ WINNING_CONDITION = 20
 class GameService:
     def __init__(self, socketio: SocketIO, controller_url):
         self.socketio = socketio
-        self.players = {}
+        self.player_name_by_id = {}  # player_id --> player_name
+        self.players = {}  # player_id --> Pod
         self.player_order = []
         self.dead = set()
-        self.controller = ControllerClient(base_url=controller_url)
+        self.controller = ControllerClient(controller_url=controller_url)
         self.winner = None
         self.num_players_alive = 0
         self.turn = 0
@@ -48,12 +49,7 @@ class GameService:
 
     def start_game(self):
         self.notifier.notify_all("Initializing game...")
-        game_data = self.controller.init_game(
-            [
-                {player_id: player_name}
-                for player_id, player_name in self.players.items()
-            ]
-        )
+        game_data = self.controller.init_game(self.player_name_by_id)
         players = game_data["players"]
         for p in players:
             player_id = p["playerId"]
@@ -100,7 +96,7 @@ class GameService:
 
         self.notifier.notify_all("Resetting game state...")
         self.controller.destroy_all()
-        self.__init__(self.socketio, self.controller.base_url)
+        self.__init__(self.socketio, self.controller.controller_url)
 
     def start_turn(self, player_id):
         print(f"Beginning turn of {player_id}")

@@ -57,6 +57,9 @@ class Controller:
         response = None
         if message_type == MessageType.LOBBY:
             self.update_lobby(message.members)
+        elif message_type == MessageType.END_GAME:
+            self.model.update_winner(message.winner)
+            self.view.compose_menu(EndGameView)
         elif (
             message_type == MessageType.START_GAME
             or message_type == MessageType.END_TURN
@@ -70,9 +73,6 @@ class Controller:
         elif message_type == MessageType.DEATH:
             self.model.update_alive_status(is_alive=False)
             self.view.compose_menu(DisabledView)
-        elif message_type == MessageType.END_GAME:
-            self.model.update_winner(message.winner)
-            self.view.compose_menu(EndGameView)
         else:
             response = await self.handle_interactive_message(message_type, message)
 

@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
+package controller;
+
+service ControllerService {
+  rpc GetFleetStatus (google.protobuf.Empty) returns (GetFleetStatusResponse);
+  rpc InitGame (InitGameRequest) returns (InitGameResponse);
+  rpc DestroyTokyoBay (google.protobuf.Empty) returns (DestroyTokyoBayResponse);
+  rpc GetPodUrl (GetPodUrlRequest) returns (GetPodUrlResponse);
+  rpc DestroyAll (google.protobuf.Empty) returns (DestroyAllResponse);
+  rpc Relocate (RelocateRequest) returns (RelocateResponse);
+  rpc DestroyPod (DestroyPodRequest) returns (DestroyPodResponse);
+  rpc GetNodeState (google.protobuf.Empty) returns (GetNodeStateResponse);
+}
+
+message GetFleetStatusResponse {
+  repeated string fleet_status = 1;
+}
+
+message PlayerInput {
+  string player_id = 1;
+  string pod_name = 2;
+}
+
+message InitGameRequest {
+  repeated PlayerInput players = 1;
+}
+
+message Player {
+  string player_id = 1;
+  string name = 2;
+  string pod_url = 3;
+}
+
+message InitGameResponse {
+  repeated Player players = 1;
+  repeated string locations = 2;
+}
+
+message DestroyTokyoBayResponse {
+  google.protobuf.StringValue player_id = 1;
+}
+
+message GetPodUrlRequest {
+  string player_id = 1;
+}
+
+message GetPodUrlResponse {
+  string pod_url = 1;
+}
+
+message DestroyAllResponse {
+  string status = 1;
+}
+
+message RelocateRequest {
+  string player_id = 1;
+  string target_location = 2;
+  string current_location = 3;
+}
+
+message RelocateResponse {
+  string status = 1;
+}
+
+message DestroyPodRequest {
+  string player_id = 1;
+  string location = 2;
+}
+
+message DestroyPodResponse {
+  string status = 1;
+} 
+
+message GetNodeStateResponse {
+  string tokyo_city = 1;
+  string tokyo_bay = 2;
+  repeated string outside = 3;
+}

@@ -7,3 +7,6 @@ setuptools
 python-dotenv
 textual
 pytest
+grpcio
+grpcio-tools
+mypy-protobuf
