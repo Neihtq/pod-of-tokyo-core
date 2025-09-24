@@ -7,6 +7,7 @@ from pod_of_tokyo_client.utils.compose_stats import (
     get_player_stats_widget,
 )
 from pod_of_tokyo_client.utils.constants import (
+    CENTERED_ELEMENT_CLASS,
     EVENT_LOGS_BOX_ID,
     GAME_STATE_BOX_ID,
     MENU_BOX_ID,
@@ -17,7 +18,7 @@ from pod_of_tokyo_client.view.player_menus import JoinView
 
 
 class PodOfTokyoView(App):
-    CSS_PATH = "css/green_border.tcss"
+    CSS_PATH = "css/styles.tcss"
 
     def __init__(self, model, controller):
         super().__init__()
@@ -79,7 +80,9 @@ class PodOfTokyoView(App):
         return static
 
     def compose_menu(self, view_class):
-        content = view_class(model=self.model, controller=self.controller)
+        content = view_class(
+            model=self.model, controller=self.controller, classes=CENTERED_ELEMENT_CLASS
+        )
         menu_container = self.query_one(f"#{MENU_BOX_ID}")
         menu_container.remove_children()
         menu_container.mount(content)
@@ -88,13 +91,3 @@ class PodOfTokyoView(App):
         self.compose_player_stats()
         menu_list = self.query_one(f"#{MENU_CONTENT_ID}")
         menu_list.focus()
-
-    def set_player_stats(self, health, score, energy):
-        stats = f"""
-        Health: {health}
-        Score: {score}
-        Energy: {energy}
-        """
-
-        player_stats = self.query_one(f"#{PLAYER_STATS_BOX_ID}")
-        player_stats.update(stats)
