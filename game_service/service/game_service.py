@@ -26,24 +26,6 @@ class GameService:
         self.num_players_alive = 0
         self.turn = 0
 
-    def get_game_state(self):
-        game_state = defaultdict(list)
-        for p_id in self.player_order:
-            if p_id in self.dead:
-                continue
-            pod = self.players[p_id]
-            health, score, energy, location = pod.get_state()
-            game_state[location].append(
-                Player(
-                    health=health,
-                    score=score,
-                    energy=energy,
-                    location=location,
-                    name=pod.name,
-                )
-            )
-        return GameState(game_state)
-
     def remove(self, sid):
         if sid in self.players:
             del self.players[sid]
@@ -59,11 +41,10 @@ class GameService:
     def wait_for_game_ready(self):
         print("Waiting for fleet to be ready")
         ready = False
-        self.notifier.notify_all("Monsters descending down to Japan...")
         while not ready:
             fleet_status = self.controller.get_fleet_status()
             ready = all(status == PodStatus.ACTIVE.value for status in fleet_status)
-            time.sleep(5)
+            time.sleep(2)
 
     def start_game(self):
         self.notifier.notify_all("Initializing game...")
@@ -117,7 +98,6 @@ class GameService:
             self.notifier.notify_turn_end((player_id))
             self.turn += 1
 
-        self.notifier.notify_game_end(self.winner)
         self.notifier.notify_all("Resetting game state...")
         self.controller.destroy_all()
         self.__init__(self.socketio, self.controller.base_url)
@@ -184,6 +164,7 @@ class GameService:
         )
         if is_winner:
             self.winner = pod.name
+            self.notifier.notify_game_end(self.winner)
             self.notifier.notify_all(f"{pod.name} is the King of Tokyo!")
 
         return is_winner

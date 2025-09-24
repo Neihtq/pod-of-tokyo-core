@@ -5,7 +5,8 @@ class Message:
     def __init__(self, data):
         self.members = data.get("members", None)
         self.message = data.get("message", None)
-        self.dices = data.get("dices")
+        self.dices = data.get("dices", [])
+        self.winner = data.get("winner", None)
 
         update = data.get("update", None)
         if update:

@@ -10,6 +10,7 @@ from pod_of_tokyo_client.view.player_menus import (
     Phase2,
     YieldView,
 )
+from pod_of_tokyo_client.view.player_menus.end_game_view import EndGameView
 from pod_of_tokyo_commons.model import MessageType
 
 
@@ -69,6 +70,9 @@ class Controller:
         elif message_type == MessageType.DEATH:
             self.model.update_alive_status(is_alive=False)
             self.view.compose_menu(DisabledView)
+        elif message_type == MessageType.END_GAME:
+            self.model.update_winner(message.winner)
+            self.view.compose_menu(EndGameView)
         else:
             response = await self.handle_interactive_message(message_type, message)
 
@@ -97,6 +101,7 @@ class Controller:
         self.model.add_event(event)
 
     async def start_game(self):
+        self.view.compose_menu(DisabledView)
         await self.client.send_message("start_game")
 
     async def confirm(self):

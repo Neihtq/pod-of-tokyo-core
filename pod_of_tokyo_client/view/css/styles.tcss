@@ -45,3 +45,20 @@
   width: auto; 
   padding: 0 1;
 }
+
+.player-menu-element {
+  content-align: center middle;
+}
+
+#winner-label {
+  text-style: bold;
+  color: lightgreen;
+  content-align: center middle;
+}
+
+#loser-label {
+  text-style: bold;
+  color: lightcoral;
+  content-align: center middle;
+}
+

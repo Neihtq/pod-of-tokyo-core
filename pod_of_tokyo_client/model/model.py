@@ -10,6 +10,7 @@ class Model:
         self.events = []
         self.players = []
         self.dices = []
+        self.is_winner = False
 
     def set_view(self, view):
         self.view = view
@@ -40,3 +41,7 @@ class Model:
     def update_game_state(self, game_state):
         self.game_state = game_state
         self.view.compose_game_state()
+
+    def update_winner(self, winner):
+        self.winner = winner
+        self.is_winner = winner == self.player_name

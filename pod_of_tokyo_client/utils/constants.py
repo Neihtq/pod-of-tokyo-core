@@ -5,3 +5,5 @@ MENU_CONTENT_HEADER_ID = "menu-content-header"
 EVENT_LOGS_BOX_ID = "event-logs"
 GAME_STATE_BOX_ID = "game-state-box"
 PLAYER_NAME_ID = "player-name"
+
+CENTERED_ELEMENT_CLASS = "player-menu-element"
