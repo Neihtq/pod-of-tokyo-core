@@ -11,3 +11,4 @@ class MessageType(Enum):
     LOBBY = "LOBBY"
     START_GAME = "START_GAME"
     END_TURN = "END_TURN"
+    END_GAME = "END_GAME"
