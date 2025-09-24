@@ -59,6 +59,7 @@ class GameService:
     def wait_for_game_ready(self):
         print("Waiting for fleet to be ready")
         ready = False
+        self.notifier.notify_all("Monsters descending down to Japan...")
         while not ready:
             fleet_status = self.controller.get_fleet_status()
             ready = all(status == PodStatus.ACTIVE.value for status in fleet_status)

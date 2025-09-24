@@ -68,9 +68,9 @@ class NotificationService:
     def notify_turn_end(self, player_id):
         self._emit_message(command=MessageType.END_TURN, recipient=player_id)
 
-    def notify_game_end(self, winner_id: str):
+    def notify_game_end(self, winner_name: str):
         self._emit_message(
             command=MessageType.END_GAME,
             recipient=ROOM,
-            payload={"winnerId": winner_id},
+            payload={"winner": winner_name},
         )
