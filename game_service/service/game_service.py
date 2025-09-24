@@ -10,7 +10,7 @@ from pod_of_tokyo_commons.model.update_event import UpdateEvent
 from game_service.middleware.controller_client import ControllerClient
 from game_service.middleware.pod_client import PodClient
 from game_service.service.dice_service import roll_dices
-from game_service.utils.constants import ROOM
+from game_service.service.notification_service import NotificationService
 
 WINNING_CONDITION = 20
 
@@ -48,6 +48,14 @@ class GameService:
         if sid in self.players:
             del self.players[sid]
 
+    def init_notifier(self):
+        self.notifier = NotificationService(
+            sio=self.socketio,
+            player_order=self.player_order,
+            dead_players=self.dead,
+            players=self.players,
+        )
+
     def wait_for_game_ready(self):
         print("Waiting for fleet to be ready")
         ready = False
@@ -57,7 +65,7 @@ class GameService:
             time.sleep(5)
 
     def start_game(self):
-        self.notify_all("Initializing game...")
+        self.notifier.notify_all("Initializing game...")
         game_data = self.controller.init_game(
             [
                 {player_id: player_name}
@@ -72,7 +80,7 @@ class GameService:
             )
             self.player_order.append(player_id)
             update = UpdateEvent(location=Location.OUTSIDE, health=10)
-            self.send_player_update(player_update=update, player_id=player_id)
+            self.notifier.send_player_update(player_update=update, player_id=player_id)
 
         self.num_players_alive = len(self.player_order)
 
@@ -86,11 +94,12 @@ class GameService:
             for location in game_data["locations"]
         }
         self.tokyo_bay_destroyed = self.num_players_alive
-        self.notify_all_game_start()
+        self.notifier.notify_game_start()
         self.wait_for_game_ready()
-        self.notify_all("Game started!")
+        self.notifier.notify_all("Game started!")
 
     def game_loop(self):
+        self.init_notifier()
         self.start_game()
         idx = self.decide_starter()
         while not self.winner:
@@ -101,10 +110,10 @@ class GameService:
                 continue
 
             name = self.players[player_id].name
-            self.notify_all(f"It's {name}'s turn.")
+            self.notifier.notify_all(f"It's {name}'s turn.")
             self.start_turn(player_id)
             idx = (idx + 1) % len(self.player_order)
-            self.notify_turn_end((player_id))
+            self.notifier.notify_turn_end((player_id))
             self.turn += 1
 
         self.controller.destroy_all()
@@ -124,8 +133,8 @@ class GameService:
             pod.update_score(2)
             score += 2
             player_update = UpdateEvent(location=location, score=2)
-            self.send_player_update(player_update, pod.player_id)
-            self.notify_all(f"{pod.name} received 2 stars!")
+            self.notifier.send_player_update(player_update, pod.player_id)
+            self.notifier.notify_all(f"{pod.name} received 2 stars!")
 
         if self.check_winner(pod, score):
             return
@@ -155,13 +164,13 @@ class GameService:
 
         if location_key:
             location = self.locations[location_key]
-            self.notify_all(f"{pod.name} enters {location.value}!")
+            self.notifier.notify_all(f"{pod.name} enters {location.value}!")
             self.controller.relocate(pod.player_id, OUTSIDE_KEY, location_key)
             pod.update_score(1)
             score += 1
             player_update = UpdateEvent(location=location, score=1)
-            self.send_player_update(player_update, pod.player_id)
-            self.notify_all(f"{pod.name} received 1 star!")
+            self.notifier.send_player_update(player_update, pod.player_id)
+            self.notifier.notify_all(f"{pod.name} received 1 star!")
 
         return score, location_key
 
@@ -172,26 +181,26 @@ class GameService:
         )
         if is_winner:
             self.winner = pod.name
-            self.notify_all(f"{pod.name} is the King of Tokyo!")
+            self.notifier.notify_all(f"{pod.name} is the King of Tokyo!")
 
         return is_winner
 
     def reroll_dices(self, pod: PodClient):
-        self.call_and_wait(MessageType.ROLL, pod.player_id)
+        self.notifier.call_and_wait(MessageType.ROLL, pod.player_id)
         num_dices = num_throws = 6
         throw_count = 0
         max_num_throws = 3
         dices_to_keep = []
         while throw_count < max_num_throws and num_throws > 0:
             dices = roll_dices(num_throws)
-            self.notify_all(f"{pod.name} threw the dices! {dices}")
+            self.notifier.notify_all(f"{pod.name} threw the dices! {dices}")
 
-            response = self.call_and_wait(
+            response = self.notifier.call_and_wait(
                 MessageType.REROLL_AND_RESOLVE, pod.player_id, {"dices": dices}
             )
             chosen_dices = response["dices"]
             dices_to_keep.extend(chosen_dices)
-            self.notify_all(f"{pod.name} kept {dices_to_keep}")
+            self.notifier.notify_all(f"{pod.name} kept {dices_to_keep}")
             num_throws = num_throws - len(chosen_dices)
             throw_count += 1
 
@@ -206,7 +215,7 @@ class GameService:
         return dices_to_keep
 
     def resolve_dices(self, pod, dices, location):
-        self.notify_all(f"{pod.name} is resolving their dices: {dices}")
+        self.notifier.notify_all(f"{pod.name} is resolving their dices: {dices}")
         counter = Counter(dices)
         for key in counter:
             amount = counter[key]
@@ -217,20 +226,20 @@ class GameService:
             elif key == DiceSymbols.THUNDER.value:
                 pod.charge_energy(energy=amount)
                 player_update = UpdateEvent(location=location, energy=amount)
-                self.send_player_update(player_update, pod.player_id)
-                self.notify_all(f"{pod.name} charged {amount} energy.")
+                self.notifier.send_player_update(player_update, pod.player_id)
+                self.notifier.notify_all(f"{pod.name} charged {amount} energy.")
             elif key in DiceSymbols.NUMBERS.value and amount >= 3:
                 score = int(key) + max(0, amount - 3) * int(key)
                 pod.update_score(score=score)
                 player_update = UpdateEvent(location=location, score=score)
-                self.send_player_update(player_update, pod.player_id)
+                self.notifier.send_player_update(player_update, pod.player_id)
                 msg_suffix = "star" if score == 1 else "stars"
                 message = f"{pod.name} received {score} {msg_suffix}!"
-                self.notify_all(message)
+                self.notifier.notify_all(message)
 
     def heal_player(self, pod, amount, location):
         if self.is_in_tokyo(location=location):
-            self.notify_all(
+            self.notifier.notify_all(
                 f"{pod.name} is in Tokyo! Healing in Tokyo is not possible!"
             )
             return
@@ -239,12 +248,12 @@ class GameService:
             amount = min(amount, 10 - health)
             pod.heal(health=amount)
             player_update = UpdateEvent(location=location, health=amount)
-            self.send_player_update(player_update, pod.player_id)
-            self.notify_all(f"{pod.name} healed {amount} life points.")
+            self.notifier.send_player_update(player_update, pod.player_id)
+            self.notifier.notify_all(f"{pod.name} healed {amount} life points.")
 
     def slap(self, active_pod, location, damage):
         if self.turn == 0:
-            self.notify_all(
+            self.notifier.notify_all(
                 f"The beginning player cannot slap other players on their first turn!"
             )
             return
@@ -265,8 +274,8 @@ class GameService:
             player_update = UpdateEvent(
                 location=self.locations[p_location], damage=damage
             )
-            self.send_player_update(player_update, p_id)
-            self.notify_all(
+            self.notifier.send_player_update(player_update, p_id)
+            self.notifier.notify_all(
                 f"{active_pod.name} slapped {pod.name}! {pod.name} lost {damage} life points."
             )
             health -= damage
@@ -274,63 +283,37 @@ class GameService:
                 self.dead.add(p_id)
                 self.num_players_alive -= 1
                 self.controller.destroy_pod(p_id, p_location)
-                self.notify_player_death(p_id)
-                self.notify_all(f"{pod.name} died!")
+                self.notifier.notify_death(p_id)
+                self.notifier.notify_all(f"{pod.name} died!")
 
                 if self.num_players_alive <= 4 and not self.tokyo_bay_destroyed:
                     self.destroy_tokyo_bay()
 
             elif self.is_in_tokyo(location_key=p_location):
-                response = self.call_and_wait(MessageType.YIELD, p_id)
+                response = self.notifier.call_and_wait(MessageType.YIELD, p_id)
                 if response["isYielding"]:
-                    self.notify_all(f"{pod.name} is leaving Tokyo!")
+                    self.notifier.notify_all(f"{pod.name} is leaving Tokyo!")
                     self.controller.relocate(p_id, p_location, OUTSIDE_KEY)
                     player_update = UpdateEvent(location=Location.OUTSIDE)
-                    self.send_player_update(player_update, p_id)
+                    self.notifier.send_player_update(player_update, p_id)
 
             time.sleep(0.5)
 
     def destroy_tokyo_bay(self):
         player_at_bay = self.controller.destroy_tokyo_bay()["playerId"]
-        self.notify_all(f"Tokyo Bay has been flooded!")
+        self.notifier.notify_all(f"Tokyo Bay has been flooded!")
         self.tokyo_bay_destroyed = True
         if player_at_bay:
             pod_at_bay = self.players[player_at_bay]
-            self.notify_all(f"{pod_at_bay.name} is leaving Tokyo!")
+            self.notifier.notify_all(f"{pod_at_bay.name} is leaving Tokyo!")
             player_update = UpdateEvent(location=Location.OUTSIDE)
-            self.send_player_update(player_update, player_at_bay)
-
-    def call_and_wait(self, command: MessageType, player_id: str, payload={}):
-        response = self.socketio.call(
-            command.value, payload, to=player_id, timeout=600
-        )["response"]
-        print(f"Response: {response}")
-        return response
-
-    def send_player_update(self, player_update, player_id):
-        payload = {"update": player_update.to_dict()}
-        self.socketio.emit(MessageType.UPDATE.value, payload, to=player_id)
-
-    def notify_player_death(self, player_id):
-        self.socketio.emit(MessageType.DEATH.value, {}, to=player_id)
-
-    def notify_all(self, message):
-        game_state = self.get_game_state().to_dict()
-        payload = {"message": message, "gameState": game_state}
-        self.socketio.emit(MessageType.EVENT.value, payload, to=ROOM)
-        time.sleep(1.0)
-
-    def notify_all_game_start(self):
-        self.socketio.emit(MessageType.START_GAME.value, {}, to=ROOM)
-
-    def notify_turn_end(self, player_id):
-        self.socketio.emit(MessageType.END_TURN.value, {}, to=player_id)
+            self.notifier.send_player_update(player_update, player_at_bay)
 
     def decide_starter(self):
         players = self.player_order.copy()
         winners = []
         max_score = 0
-        self.notify_all("Determining who starts...")
+        self.notifier.notify_all("Determining who starts...")
         while len(winners) != 1:
             winners = []
             max_score = 0
