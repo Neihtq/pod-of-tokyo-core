@@ -19,24 +19,17 @@ WINNING_CONDITION = 20
 class GameService:
     def __init__(self, socketio: SocketIO, controller_url):
         self.socketio = socketio
-        self.players = {}  # player_id --> Pod
-        self.player_order = []
-        self.dead = set()
         self.controller = ControllerClient(controller_url=controller_url)
         self.winner = None
-        self.num_players_alive = 0
         self.turn = 0
 
     def remove(self, sid):
-        if sid in self.players:
-            del self.players[sid]
+        self.manager.remove_player(sid)
 
     def init_notifier(self):
         self.notifier = NotificationService(
             sio=self.socketio,
-            player_order=self.player_order,
-            dead_players=self.dead,
-            players=self.players,
+            manager=self.manager,
         )
 
     def wait_for_game_ready(self):
@@ -55,14 +48,14 @@ class GameService:
         players = game_data["players"]
         for p in players:
             player_id = p["playerId"]
-            self.players[player_id] = PodClient(
-                base_url=p["podUrl"], name=p["name"], player_id=p["playerId"]
+            self.manager.set_pod_and_add_to_order(
+                player_id=player_id,
+                pod_client=PodClient(
+                    base_url=p["podUrl"], name=p["name"], player_id=p["playerId"]
+                ),
             )
-            self.player_order.append(player_id)
             update = UpdateEvent(location=Location.OUTSIDE, health=10)
             self.notifier.send_player_update(player_update=update, player_id=player_id)
-
-        self.num_players_alive = len(self.player_order)
 
         key_to_location_map = {
             TOKYO_CITY_KEY: Location.CITY,
@@ -73,7 +66,7 @@ class GameService:
             location: key_to_location_map[location]
             for location in game_data["locations"]
         }
-        self.tokyo_bay_destroyed = self.num_players_alive
+        self.tokyo_bay_destroyed = self.manager.get_num_alive()
         self.notifier.notify_game_start()
         self.wait_for_game_ready()
         self.notifier.notify_all("Game started!")
@@ -81,18 +74,17 @@ class GameService:
     def game_loop(self):
         self.init_notifier()
         self.start_game()
-        idx = self.decide_starter()
+        index = self.decide_starter()
         while not self.winner:
-            print(self.player_order, idx)
-            player_id = self.player_order[idx]
-            if player_id in self.dead:
-                idx += 1
+            player_id = self.manager.get_current_player_id(index)
+            if self.manager.is_dead(player_id):
+                index += 1
                 continue
 
-            name = self.players[player_id].name
+            name = self.manager.get_player_name(player_id)
             self.notifier.notify_all(f"It's {name}'s turn.")
             self.start_turn(player_id)
-            idx = (idx + 1) % len(self.player_order)
+            index = (index + 1) % self.manager.get_player_order_length()
             self.notifier.notify_turn_end((player_id))
             self.turn += 1
 
@@ -102,7 +94,7 @@ class GameService:
 
     def start_turn(self, player_id):
         print(f"Beginning turn of {player_id}")
-        pod = self.players[player_id]
+        pod = self.manager.get_pod(player_id)
         _, score, _, location_key = pod.get_state()
 
         location = self.locations[location_key]
@@ -140,7 +132,7 @@ class GameService:
         location_key = None
         if node_state[TOKYO_CITY_KEY] is None:
             location_key = TOKYO_CITY_KEY
-        elif self.num_players_alive > 4 and node_state[TOKYO_BAY_KEY] is None:
+        elif self.manager.get_num_alive() > 4 and node_state[TOKYO_BAY_KEY] is None:
             location_key = TOKYO_BAY_KEY
 
         if location_key:
@@ -157,8 +149,8 @@ class GameService:
 
     def check_winner(self, pod, score):
         is_winner = score == WINNING_CONDITION or (
-            len(self.player_order) - len(self.dead) == 1
-            and pod.player_id not in self.dead
+            self.manager.get_num_alive() == 1
+            and not self.manager.is_dead(pod.player_id)
         )
         if is_winner:
             self.winner = pod.name
@@ -240,11 +232,11 @@ class GameService:
             )
             return
 
-        for p_id in self.player_order:
-            if p_id in self.dead or p_id == active_pod.player_id:
+        for p_id in self.manager.get_player_order:
+            if self.manager.is_dead(p_id) or p_id == active_pod.player_id:
                 continue
 
-            pod = self.players[p_id]
+            pod = self.manager.get_pod(p_id)
             health, _, _, p_location = pod.get_state()
             if self.locations[p_location] == location or (
                 self.is_in_tokyo(location=location)
@@ -262,13 +254,12 @@ class GameService:
             )
             health -= damage
             if health <= 0:
-                self.dead.add(p_id)
-                self.num_players_alive -= 1
+                self.manager.add_dead_player(p_id)
                 self.controller.destroy_pod(p_id, p_location)
                 self.notifier.notify_death(p_id)
                 self.notifier.notify_all(f"{pod.name} died!")
 
-                if self.num_players_alive <= 4 and not self.tokyo_bay_destroyed:
+                if self.manager.get_num_alive() <= 4 and not self.tokyo_bay_destroyed:
                     self.destroy_tokyo_bay()
 
             elif self.is_in_tokyo(location_key=p_location):
@@ -282,17 +273,17 @@ class GameService:
             time.sleep(0.5)
 
     def destroy_tokyo_bay(self):
-        player_at_bay = self.controller.destroy_tokyo_bay()["playerId"]
+        player_id_at_bay = self.controller.destroy_tokyo_bay()["playerId"]
         self.notifier.notify_all(f"Tokyo Bay has been flooded!")
         self.tokyo_bay_destroyed = True
-        if player_at_bay:
-            pod_at_bay = self.players[player_at_bay]
+        if player_id_at_bay:
+            pod_at_bay = self.manager.get_pod(player_id_at_bay)
             self.notifier.notify_all(f"{pod_at_bay.name} is leaving Tokyo!")
             player_update = UpdateEvent(location=Location.OUTSIDE)
-            self.notifier.send_player_update(player_update, player_at_bay)
+            self.notifier.send_player_update(player_update, player_id_at_bay)
 
     def decide_starter(self):
-        players = self.player_order.copy()
+        players = self.manager.get_player_order().copy()
         winners = []
         max_score = 0
         self.notifier.notify_all("Determining who starts...")
@@ -310,8 +301,8 @@ class GameService:
 
             players = winners.copy()
 
-        starter = winners[0]
-        return self.player_order.index(starter)
+        starting_player_id = winners[0]
+        return self.manager.get_player_index(starting_player_id)
 
     def set_players(self, name_by_id: dict[str, str]):
         self.manager = PlayerManager(name_by_id)

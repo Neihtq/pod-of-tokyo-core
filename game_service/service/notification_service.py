@@ -5,14 +5,13 @@ from pod_of_tokyo_commons.entities import GameState, Player
 from pod_of_tokyo_commons.model.message_type import MessageType
 
 from game_service.utils.constants import ROOM
+from service.player_manager import PlayerManager
 
 
 class NotificationService:
-    def __init__(self, sio, player_order: list, dead_players: set, players: dict):
+    def __init__(self, sio, manager: PlayerManager):
         self.sio = sio
-        self.player_order = player_order
-        self.dead_players = dead_players
-        self.players = players
+        self.manager = manager
 
     def _emit_message(self, command: MessageType, recipient: str, payload: dict = {}):
         self.sio.emit(command.value, payload, to=recipient)
@@ -25,10 +24,11 @@ class NotificationService:
 
     def get_game_state(self):
         game_state = defaultdict(list)
-        for p_id in self.player_order:
-            if p_id in self.dead_players:
+        for p_id in self.manager.player_order:
+            if self.manager.is_dead(p_id):
                 continue
-            pod = self.players[p_id]
+
+            pod = self.manager.get_pod(p_id)
             health, score, energy, location = pod.get_state()
             game_state[location].append(
                 Player(
