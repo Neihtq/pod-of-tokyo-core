@@ -3,7 +3,7 @@ from collections import Counter
 
 from flask_socketio import SocketIO
 from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CITY_KEY
-from pod_of_tokyo_commons.entities import DiceSymbols, GameState, Player
+from pod_of_tokyo_commons.entities import DiceSymbols
 from pod_of_tokyo_commons.model import Location, MessageType, PodStatus
 from pod_of_tokyo_commons.model.update_event import UpdateEvent
 
@@ -11,6 +11,7 @@ from game_service.middleware.controller_client import ControllerClient
 from game_service.middleware.pod_client import PodClient
 from game_service.service.dice_service import roll_dices
 from game_service.service.notification_service import NotificationService
+from service.player_manager import PlayerManager
 
 WINNING_CONDITION = 20
 
@@ -18,7 +19,6 @@ WINNING_CONDITION = 20
 class GameService:
     def __init__(self, socketio: SocketIO, controller_url):
         self.socketio = socketio
-        self.player_name_by_id = {}  # player_id --> player_name
         self.players = {}  # player_id --> Pod
         self.player_order = []
         self.dead = set()
@@ -49,7 +49,9 @@ class GameService:
 
     def start_game(self):
         self.notifier.notify_all("Initializing game...")
-        game_data = self.controller.init_game(self.player_name_by_id)
+        players = self.manager.get_player_list()
+        game_data = self.controller.init_game(players)
+
         players = game_data["players"]
         for p in players:
             player_id = p["playerId"]
@@ -310,3 +312,6 @@ class GameService:
 
         starter = winners[0]
         return self.player_order.index(starter)
+
+    def set_players(self, name_by_id: dict[str, str]):
+        self.manager = PlayerManager(name_by_id)

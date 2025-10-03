@@ -4,6 +4,8 @@ from pod_of_tokyo_commons.constants import OUTSIDE_KEY, TOKYO_BAY_KEY, TOKYO_CIT
 from proto import controller_service_pb2 as pb2
 from proto import controller_service_pb2_grpc as pb2_grpc
 
+from entities.player import Player
+
 
 class ControllerClient:
     def __init__(self, controller_url):
@@ -11,11 +13,11 @@ class ControllerClient:
         channel = grpc.insecure_channel(controller_url)
         self.stub = pb2_grpc.ControllerServiceStub(channel)
 
-    def init_game(self, players: dict[str, str]) -> dict:
+    def init_game(self, players: list[Player]) -> dict:
         request = pb2.InitGameRequest(
             players=[
-                pb2.PlayerInput(player_id=player_id, pod_name=pod_name)
-                for player_id, pod_name in players.items()
+                pb2.PlayerInput(player_id=p.player_id, pod_name=p.player_name)
+                for p in players
             ]
         )
         response = self.stub.InitGame(request)

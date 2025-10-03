@@ -58,7 +58,7 @@ class GameServer:
         @self.socketio.on("start_game")
         def handle_start_game():
             print("Received message to start game")
-            self.game_service.player_name_by_id = self.connections.copy()
+            self.game_service.set_players(self.connections.copy())
             self.socketio.start_background_task(self.game_service.game_loop)
 
     def notify_all(self):
