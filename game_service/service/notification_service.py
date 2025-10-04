@@ -4,8 +4,8 @@ from collections import defaultdict
 from pod_of_tokyo_commons.entities import GameState, Player
 from pod_of_tokyo_commons.model.message_type import MessageType
 
+from game_service.service.player_manager import PlayerManager
 from game_service.utils.constants import ROOM
-from service.player_manager import PlayerManager
 
 
 class NotificationService:

@@ -11,7 +11,7 @@ from game_service.middleware.controller_client import ControllerClient
 from game_service.middleware.pod_client import PodClient
 from game_service.service.dice_service import roll_dices
 from game_service.service.notification_service import NotificationService
-from service.player_manager import PlayerManager
+from game_service.service.player_manager import PlayerManager
 
 WINNING_CONDITION = 20
 
@@ -76,7 +76,7 @@ class GameService:
         self.start_game()
         index = self.decide_starter()
         while not self.winner:
-            player_id = self.manager.get_current_player_id(index)
+            player_id = self.manager.get_player_at_index(index)
             if self.manager.is_dead(player_id):
                 index += 1
                 continue
@@ -84,7 +84,7 @@ class GameService:
             name = self.manager.get_player_name(player_id)
             self.notifier.notify_all(f"It's {name}'s turn.")
             self.start_turn(player_id)
-            index = (index + 1) % self.manager.get_player_order_length()
+            index = (index + 1) % self.manager.get_number_of_players()
             self.notifier.notify_turn_end((player_id))
             self.turn += 1
 
