@@ -12,8 +12,7 @@ from game_service.middleware.pod_client import PodClient
 from game_service.service.dice_service import roll_dices
 from game_service.service.notification_service import NotificationService
 from game_service.service.player_manager import PlayerManager
-
-WINNING_CONDITION = 20
+from game_service.utils import game_utils
 
 
 class GameService:
@@ -98,7 +97,9 @@ class GameService:
         _, score, _, location_key = pod.get_state()
 
         location = self.locations[location_key]
-        if not self.is_in_tokyo(location_key=location_key):
+        if not game_utils.is_in_tokyo(
+            location_data=self.locations, location_key=location_key
+        ):
             score, location_key = self.fill_empty_space(pod, score)
             if location_key:
                 location = self.locations[location_key]
@@ -119,13 +120,6 @@ class GameService:
             score, _ = self.fill_empty_space(pod, score)
 
         self.check_winner(pod, score)
-
-    def is_in_tokyo(self, location_key=None, location=None):
-        tokyo_locations = {Location.CITY, Location.BAY}
-        if location_key:
-            return self.locations[location_key] in tokyo_locations
-
-        return location in tokyo_locations
 
     def fill_empty_space(self, pod, score):
         node_state = self.controller.get_node_state()
@@ -148,7 +142,7 @@ class GameService:
         return score, location_key
 
     def check_winner(self, pod, score):
-        is_winner = score == WINNING_CONDITION or (
+        is_winner = score == game_utils.WINNING_CONDITION or (
             self.manager.get_num_alive() == 1
             and not self.manager.is_dead(pod.player_id)
         )
@@ -212,7 +206,7 @@ class GameService:
                 self.notifier.notify_all(message)
 
     def heal_player(self, pod, amount, location):
-        if self.is_in_tokyo(location=location):
+        if game_utils.is_in_tokyo(location_data=self.locations, location=location):
             self.notifier.notify_all(
                 f"{pod.name} is in Tokyo! Healing in Tokyo is not possible!"
             )
@@ -239,8 +233,10 @@ class GameService:
             pod = self.manager.get_pod(p_id)
             health, _, _, p_location = pod.get_state()
             if self.locations[p_location] == location or (
-                self.is_in_tokyo(location=location)
-                and self.is_in_tokyo(location_key=p_location)
+                game_utils.is_in_tokyo(location_data=self.locations, location=location)
+                and game_utils.is_in_tokyo(
+                    location_data=self.locations, location_key=p_location
+                )
             ):
                 continue
 
@@ -262,7 +258,9 @@ class GameService:
                 if self.manager.get_num_alive() <= 4 and not self.tokyo_bay_destroyed:
                     self.destroy_tokyo_bay()
 
-            elif self.is_in_tokyo(location_key=p_location):
+            elif game_utils.is_in_tokyo(
+                location_data=self.locations, location_key=p_location
+            ):
                 response = self.notifier.call_and_wait(MessageType.YIELD, p_id)
                 if response["isYielding"]:
                     self.notifier.notify_all(f"{pod.name} is leaving Tokyo!")
