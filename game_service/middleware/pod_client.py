@@ -7,16 +7,16 @@ class PodClient:
         self.name = name
         self.player_id = player_id
 
-    def slap(self, damage):
+    def slap(self, damage: int):
         return http.post(self.base_url, "slap", {"damage": damage})
 
-    def heal(self, health):
+    def heal(self, health: int):
         return http.post(self.base_url, "heal", {"health": health})
 
-    def update_score(self, score):
+    def update_score(self, score: int):
         return http.post(self.base_url, "updateScore", {"points": score})
 
-    def charge_energy(self, energy):
+    def charge_energy(self, energy: int):
         return http.post(self.base_url, "chargeEnergy", {"energy": energy})
 
     def get_state(self):
