@@ -33,8 +33,8 @@ class TestGameServer(unittest.TestCase):
 
     def test_handle_start_game(self):
         client = self.socketio.test_client(self.app)
-        client.emit("start_game", {})
-        self.assertEqual(self.game_service.players, self.game_server.connections)
+        client.emit("start_game")
+        self.game_service.set_players.assert_called_with(self.game_server.connections)
         self.game_service.game_loop.assert_called_once()
 
     def test_notify_all(self):

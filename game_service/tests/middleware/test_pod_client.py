@@ -16,7 +16,7 @@ class TestPodClient(unittest.TestCase):
         self.assertEqual(self.client.name, "playerName")
         self.assertEqual(self.client.player_id, "playerId")
 
-    @patch("game_service.utils.http_utils")
+    @patch("game_service.middleware.pod_client.http")
     def test_slap(self, mock_http_utils):
         response = {"health": 0}
         mock_http_utils.post.return_value = response
@@ -27,7 +27,7 @@ class TestPodClient(unittest.TestCase):
         expected = {"health": 0}
         self.assertEqual(result, expected)
 
-    @patch("game_service.utils.http_utils")
+    @patch("game_service.middleware.pod_client.http")
     def test_heal(self, mock_http_utils):
         response = {"health": 10}
         mock_http_utils.post.return_value = response
@@ -38,7 +38,7 @@ class TestPodClient(unittest.TestCase):
         expected = {"health": 10}
         self.assertEqual(result, expected)
 
-    @patch("game_service.utils.http_utils")
+    @patch("game_service.middleware.pod_client.http")
     def test_update_score(self, mock_http_utils):
         response = {"score": 5}
         mock_http_utils.post.return_value = response
@@ -49,7 +49,7 @@ class TestPodClient(unittest.TestCase):
         expected = {"score": 5}
         self.assertEqual(result, expected)
 
-    @patch("game_service.utils.http_utils")
+    @patch("game_service.middleware.pod_client.http")
     def test_charge_energy(self, mock_http_utils):
         response = {"energy": 5}
         mock_http_utils.post.return_value = response
@@ -60,7 +60,7 @@ class TestPodClient(unittest.TestCase):
         expected = {"energy": 5}
         self.assertEqual(result, expected)
 
-    @patch("game_service.utils.http_utils")
+    @patch("game_service.middleware.pod_client.http")
     def test_get_state(self, mock_http_utils):
         response = {
             "name": "someName",
@@ -73,11 +73,5 @@ class TestPodClient(unittest.TestCase):
 
         result = self.client.get_state()
 
-        expected = {
-            "name": "someName",
-            "health": 10,
-            "score": 10,
-            "energy": 10,
-            "location": "outside",
-        }
+        expected = (10, 10, 10, "outside")
         self.assertEqual(result, expected)
