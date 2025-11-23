@@ -10,19 +10,19 @@ class TestHttpUtils(unittest.TestCase):
         http_utils.get(url, resource_id)
         mock_requests.get.assert_called_with("http://test.com/123")
 
-    @patch("game_service.utils.http_utils.requests")
-    def test_post(self, mock_requests):
-        base_url = "http://test.com"
-        endpoint = "api"
-        payload = {"key": "value"}
-        
-        mock_response = mock_requests.post.return_value
-        mock_response.json.return_value = {"status": "ok"}
-        
-        result = http_utils.post(base_url, endpoint, payload)
-        
-        mock_requests.post.assert_called_with("http://test.com/api", json=payload)
-        self.assertEqual(result, {"status": "ok"})
+    def test_post(self):
+        with patch("game_service.utils.http_utils.requests.post") as mock_post:
+            mock_post.return_value.json.return_value = {"key": "value"}
+            response = http_utils.post("http://base", "endpoint", {"data": 1})
+            mock_post.assert_called_with("http://base/endpoint", json={"data": 1})
+            self.assertEqual(response, {"key": "value"})
+
+    def test_post_with_none_payload(self):
+        with patch("game_service.utils.http_utils.requests.post") as mock_post:
+            mock_post.return_value.json.return_value = {"key": "value"}
+            response = http_utils.post("http://base", "endpoint", None)
+            mock_post.assert_called_with("http://base/endpoint", json={})
+            self.assertEqual(response, {"key": "value"})
 
     @patch("game_service.utils.http_utils.requests")
     def test_put(self, mock_requests):

@@ -430,3 +430,46 @@ class TestGameService(unittest.TestCase):
         name_by_id = {"p1": "P1"}
         self.game_service.set_players(name_by_id)
         self.assertIsInstance(self.game_service.manager, PlayerManager)
+
+    def test_start_turn_calls_resolve_dices(self):
+        player_id = "p1"
+        mock_pod = MagicMock()
+        mock_pod.player_id = player_id
+        mock_pod.name = "P1"
+        mock_pod.get_state.return_value = (10, 0, 0, OUTSIDE_KEY)
+        self.game_service.manager.get_pod.return_value = mock_pod
+        self.game_service.manager.get_num_alive.return_value = 2 
+        
+        self.game_service.check_winner = MagicMock(return_value=False)
+        self.game_service.reroll_dices = MagicMock(return_value=[])
+        self.game_service.resolve_dices = MagicMock()
+        
+        self.game_service.fill_empty_space = MagicMock(return_value=(0, None))
+        
+        self.game_service.start_turn(player_id)
+        
+        self.game_service.resolve_dices.assert_called()
+
+    def test_slap_attacker_and_target_in_tokyo(self):
+        self.game_service.turn = 1
+        active_pod = MagicMock()
+        active_pod.player_id = "p1"
+        active_pod.name = "P1"
+        
+        target_pod = MagicMock()
+        target_pod.player_id = "p2"
+        target_pod.name = "P2"
+        target_pod.get_state.return_value = (10, 0, 0, TOKYO_CITY_KEY) # In Tokyo
+        
+        self.game_service.manager.get_player_order = ["p1", "p2"]
+        self.game_service.manager.is_dead.return_value = False
+        self.game_service.manager.get_pod.return_value = target_pod
+        
+        self.game_service.manager.get_pod.return_value = target_pod
+        
+        with patch("game_service.service.game_service.game_utils.is_in_tokyo") as mock_is_in_tokyo:
+            mock_is_in_tokyo.return_value = True # Both in Tokyo
+            
+            self.game_service.slap(active_pod, Location.BAY, 1)
+            
+            target_pod.slap.assert_not_called()

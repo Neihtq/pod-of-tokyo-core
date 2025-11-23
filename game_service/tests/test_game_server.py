@@ -41,3 +41,13 @@ class TestGameServer(unittest.TestCase):
         with patch.object(self.socketio, "emit") as mock_emit:
             self.game_server.notify_all()
             mock_emit.assert_called_once()
+
+    def test_on_connect_no_monster_names(self):
+        self.game_server.monster_names = []
+        client = self.socketio.test_client(self.app)
+        self.assertEqual(len(self.game_server.connections), 0)
+
+    def test_run(self):
+        with patch.object(self.socketio, "run") as mock_run:
+            self.game_server.run()
+            mock_run.assert_called_with(self.app, host=self.game_server.host, port=self.game_server.port)

@@ -9,7 +9,9 @@ def get(url, resource_id):
     return requests.get(join(url, resource_id))
 
 
-def post(base_url, endpoint, payload={}):
+def post(base_url, endpoint, payload=None):
+    if payload is None:
+        payload = {}
     return requests.post(join(base_url, endpoint), json=payload).json()
 
 

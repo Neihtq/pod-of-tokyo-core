@@ -12,21 +12,15 @@ class PlayerManager:
         self.dead_players = set()
 
     def __validate_player_id__(self, player_id):
-        try:
-            assert player_id in self.player_name_by_id
-        except AssertionError:
+        if player_id not in self.player_name_by_id:
             raise NotFound(f"Player with id '{player_id}' does not exist")
-        try:
-            assert player_id in self.pod_by_player_id
-        except AssertionError:
+        if player_id not in self.pod_by_player_id:
             raise NotFound(f"Player with id '{player_id}' does not have a pod")
 
     def set_pod(self, player_id: str, pod_client: PodClient):
-        try:
-            assert player_id in self.player_name_by_id
-            self.pod_by_player_id[player_id] = pod_client
-        except AssertionError:
+        if player_id not in self.player_name_by_id:
             raise NotFound(f"Player with id '{player_id}' does not exist")
+        self.pod_by_player_id[player_id] = pod_client
 
     def add_to_order(self, player_id: str):
         self.__validate_player_id__(player_id)
@@ -67,7 +61,8 @@ class PlayerManager:
         return self.get_pod(player_id).name
 
     def get_player_at_index(self, index: int) -> str:
-        assert index < len(self.player_order)
+        if index >= len(self.player_order):
+            raise IndexError(f"Index {index} out of range")
         return self.player_order[index]
 
     def get_number_of_players(self) -> int:

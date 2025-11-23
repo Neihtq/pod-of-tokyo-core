@@ -1,4 +1,5 @@
 import time
+import logging
 from collections import Counter
 
 from flask_socketio import SocketIO
@@ -19,8 +20,13 @@ class GameService:
     def __init__(self, socketio: SocketIO, controller_url):
         self.socketio = socketio
         self.controller = ControllerClient(controller_url=controller_url)
+        self.reset()
+
+    def reset(self):
         self.winner = None
         self.turn = 0
+        self.tokyo_bay_destroyed = False
+
 
     def remove(self, sid):
         self.manager.remove_player(sid)
@@ -32,7 +38,7 @@ class GameService:
         )
 
     def wait_for_game_ready(self):
-        print("Waiting for fleet to be ready")
+        logging.info("Waiting for fleet to be ready")
         ready = False
         while not ready:
             fleet_status = self.controller.get_fleet_status()
@@ -71,28 +77,29 @@ class GameService:
         self.notifier.notify_all("Game started!")
 
     def game_loop(self):
-        self.init_notifier()
-        self.start_game()
-        index = self.decide_starter()
-        while not self.winner:
-            player_id = self.manager.get_player_at_index(index)
-            if self.manager.is_dead(player_id):
-                index += 1
-                continue
+        while True:
+            self.init_notifier()
+            self.start_game()
+            index = self.decide_starter()
+            while not self.winner:
+                player_id = self.manager.get_player_at_index(index)
+                if self.manager.is_dead(player_id):
+                    index += 1
+                    continue
 
-            name = self.manager.get_player_name(player_id)
-            self.notifier.notify_all(f"It's {name}'s turn.")
-            self.start_turn(player_id)
-            index = (index + 1) % self.manager.get_number_of_players()
-            self.notifier.notify_turn_end((player_id))
-            self.turn += 1
+                name = self.manager.get_player_name(player_id)
+                self.notifier.notify_all(f"It's {name}'s turn.")
+                self.start_turn(player_id)
+                index = (index + 1) % self.manager.get_number_of_players()
+                self.notifier.notify_turn_end((player_id))
+                self.turn += 1
 
-        self.notifier.notify_all("Resetting game state...")
-        self.controller.destroy_all()
-        self.__init__(self.socketio, self.controller.controller_url)
+            self.notifier.notify_all("Resetting game state...")
+            self.controller.destroy_all()
+            self.reset()
 
     def start_turn(self, player_id):
-        print(f"Beginning turn of {player_id}")
+        logging.info(f"Beginning turn of {player_id}")
         pod = self.manager.get_pod(player_id)
         _, score, _, location_key = pod.get_state()
 
@@ -172,14 +179,14 @@ class GameService:
             num_throws = num_throws - len(chosen_dices)
             throw_count += 1
 
-        print(f"chosen: {chosen_dices}")
-        print(f"thrown: {dices}")
+        logging.info(f"chosen: {chosen_dices}")
+        logging.info(f"thrown: {dices}")
         if len(dices_to_keep) < num_dices:
             remaining_dices = list((Counter(dices) - Counter(chosen_dices)).elements())
-            print(remaining_dices)
+            logging.info(remaining_dices)
             dices_to_keep.extend(remaining_dices)
 
-        print(f"to keep: {dices_to_keep}")
+        logging.info(f"to keep: {dices_to_keep}")
         return dices_to_keep
 
     def resolve_dices(self, pod, dices, location):

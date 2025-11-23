@@ -224,3 +224,7 @@ class TestPlayerManager(unittest.TestCase):
 
         expected_index = 0
         self.assertEqual(result, expected_index)
+
+    def test_get_player_at_index_out_of_range(self):
+        with pytest.raises(IndexError):
+            self.player_manager.get_player_at_index(99)
