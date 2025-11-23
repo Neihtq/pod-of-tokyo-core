@@ -25,12 +25,12 @@ class TestNotificationService(unittest.TestCase):
         self.assertEqual(response, expected_response)
 
     def test_notify_all(self):
-        # Mock get_game_state via manager
+
         self.mock_manager.player_order = ["p1"]
         self.mock_manager.is_dead.return_value = False
         mock_pod = MagicMock()
         mock_pod.name = "P1"
-        # health, score, energy, location
+
         mock_pod.get_state.return_value = (10, 0, 0, OUTSIDE_KEY)
         self.mock_manager.get_pod.return_value = mock_pod
         
@@ -40,7 +40,7 @@ class TestNotificationService(unittest.TestCase):
             self.mock_sio.emit.assert_called()
             args, kwargs = self.mock_sio.emit.call_args
             self.assertEqual(args[0], MessageType.EVENT.value)
-            self.assertEqual(kwargs['to'], "king-of-tokyo") # ROOM constant is "king-of-tokyo"
+            self.assertEqual(kwargs['to'], "king-of-tokyo")
             self.assertEqual(args[1]['message'], "Hello")
             self.assertIn("gameState", args[1])
             
@@ -92,7 +92,7 @@ class TestNotificationService(unittest.TestCase):
 
     def test_get_game_state(self):
         self.mock_manager.player_order = ["p1", "p2"]
-        # p2 is dead
+
         self.mock_manager.is_dead.side_effect = lambda pid: pid == "p2"
         
         mock_pod = MagicMock()

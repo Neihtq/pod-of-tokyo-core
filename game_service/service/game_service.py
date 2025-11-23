@@ -1,5 +1,5 @@
-import time
 import logging
+import time
 from collections import Counter
 
 from flask_socketio import SocketIO
@@ -26,7 +26,6 @@ class GameService:
         self.winner = None
         self.turn = 0
         self.tokyo_bay_destroyed = False
-
 
     def remove(self, sid):
         self.manager.remove_player(sid)
@@ -77,26 +76,25 @@ class GameService:
         self.notifier.notify_all("Game started!")
 
     def game_loop(self):
-        while True:
-            self.init_notifier()
-            self.start_game()
-            index = self.decide_starter()
-            while not self.winner:
-                player_id = self.manager.get_player_at_index(index)
-                if self.manager.is_dead(player_id):
-                    index += 1
-                    continue
+        self.init_notifier()
+        self.start_game()
+        index = self.decide_starter()
+        while not self.winner:
+            player_id = self.manager.get_player_at_index(index)
+            if self.manager.is_dead(player_id):
+                index += 1
+                continue
 
-                name = self.manager.get_player_name(player_id)
-                self.notifier.notify_all(f"It's {name}'s turn.")
-                self.start_turn(player_id)
-                index = (index + 1) % self.manager.get_number_of_players()
-                self.notifier.notify_turn_end((player_id))
-                self.turn += 1
+            name = self.manager.get_player_name(player_id)
+            self.notifier.notify_all(f"It's {name}'s turn.")
+            self.start_turn(player_id)
+            index = (index + 1) % self.manager.get_number_of_players()
+            self.notifier.notify_turn_end((player_id))
+            self.turn += 1
 
-            self.notifier.notify_all("Resetting game state...")
-            self.controller.destroy_all()
-            self.reset()
+        self.notifier.notify_all("Resetting game state...")
+        self.controller.destroy_all()
+        self.reset()
 
     def start_turn(self, player_id):
         logging.info(f"Beginning turn of {player_id}")
@@ -233,7 +231,7 @@ class GameService:
             )
             return
 
-        for p_id in self.manager.get_player_order:
+        for p_id in self.manager.get_player_order():
             if self.manager.is_dead(p_id) or p_id == active_pod.player_id:
                 continue
 
