@@ -1,4 +1,5 @@
 import random
+import logging
 from typing import Protocol, cast
 
 from flask import Flask, request
@@ -38,9 +39,14 @@ class GameServer:
         @self.socketio.on("connect")
         def on_connect():
             sid = socket_request.sid
+            if not self.monster_names:
+                logging.warning(f"Connection rejected for {sid}: No more monster names available.")
+
+                return
+
             self.connections[sid] = self.monster_names.pop()
             join_room(ROOM, sid=sid)
-            print(f"[+] Added player {sid}")
+            logging.info(f"[+] Added player {sid}")
             self.notify_all()
 
         @self.socketio.on("disconnect")
@@ -48,7 +54,7 @@ class GameServer:
             sid = socket_request.sid
             del self.connections[sid]
             self.game_service.remove(sid)
-            print(f"[-] Removed player {sid}")
+            logging.info(f"[-] Removed player {sid}")
 
         @self.socketio.on("get_name")
         def handle_get_name():
@@ -57,8 +63,8 @@ class GameServer:
 
         @self.socketio.on("start_game")
         def handle_start_game():
-            print("Received message to start game")
-            self.game_service.player_name_by_id = self.connections.copy()
+            logging.info("Received message to start game")
+            self.game_service.set_players(self.connections.copy())
             self.socketio.start_background_task(self.game_service.game_loop)
 
     def notify_all(self):

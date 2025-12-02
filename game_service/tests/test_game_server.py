@@ -33,11 +33,21 @@ class TestGameServer(unittest.TestCase):
 
     def test_handle_start_game(self):
         client = self.socketio.test_client(self.app)
-        client.emit("start_game", {})
-        self.assertEqual(self.game_service.players, self.game_server.connections)
+        client.emit("start_game")
+        self.game_service.set_players.assert_called_with(self.game_server.connections)
         self.game_service.game_loop.assert_called_once()
 
     def test_notify_all(self):
         with patch.object(self.socketio, "emit") as mock_emit:
             self.game_server.notify_all()
             mock_emit.assert_called_once()
+
+    def test_on_connect_no_monster_names(self):
+        self.game_server.monster_names = []
+        client = self.socketio.test_client(self.app)
+        self.assertEqual(len(self.game_server.connections), 0)
+
+    def test_run(self):
+        with patch.object(self.socketio, "run") as mock_run:
+            self.game_server.run()
+            mock_run.assert_called_with(self.app, host=self.game_server.host, port=self.game_server.port)
